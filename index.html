@@ -6,9 +6,9 @@
 <title>Bat-Family Hybrid · Mission Log</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.23.5/babel.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -39,7 +39,7 @@ button{cursor:pointer;border:none;background:none;color:inherit;font-family:inhe
 </head>
 <body>
 <div id="root"></div>
-<script type="text/babel" data-type="script">
+<script type="text/babel">
 const {useState,useReducer,useCallback,useMemo,useRef,useEffect}=React;
 
 // ─── EXERCISE LIBRARY ─────────────────────────────────────────────────────────
@@ -1588,4 +1588,3 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
- 
