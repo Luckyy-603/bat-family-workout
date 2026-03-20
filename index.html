@@ -1487,8 +1487,29 @@ function ProgressView({state,dispatch}){
 }
 
 // ─── APP ──────────────────────────────────────────────────────────────────────
+function loadState(){
+  try{
+    const saved=localStorage.getItem('batprotocol-state');
+    if(saved) return {...init,...JSON.parse(saved),view:'dash',dayId:null,expandEx:{},showWarmup:false};
+  }catch(e){}
+  return init;
+}
+
 function App(){
-  const [state,dispatch]=useReducer(reducer,init);
+  const [state,dispatch]=useReducer(reducer,undefined,loadState);
+
+  useEffect(()=>{
+    try{
+      const toSave={
+        prog:state.prog,
+        week:state.week,
+        logs:state.logs,
+        bwLog:state.bwLog,
+        units:state.units,
+      };
+      localStorage.setItem('batprotocol-state',JSON.stringify(toSave));
+    }catch(e){}
+  },[state.prog,state.week,state.logs,state.bwLog,state.units]);
 
   const renderView=()=>{
     switch(state.view){
