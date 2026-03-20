@@ -1605,7 +1605,12 @@ function WorkoutPicker({state,dispatch}){
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+try{
+  ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+}catch(e){
+  document.getElementById('root').innerHTML='<pre style="color:red;padding:20px">'+e.message+'</pre>';
+  console.error('Render error:',e);
+}
 </script>
 </body>
 </html>
