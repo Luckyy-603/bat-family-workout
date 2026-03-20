@@ -1487,7 +1487,7 @@ function ProgressView({state,dispatch}){
 }
 
 // ─── APP ──────────────────────────────────────────────────────────────────────
-export default function App(){
+function App(){
   const [state,dispatch]=useReducer(reducer,init);
 
   const renderView=()=>{
