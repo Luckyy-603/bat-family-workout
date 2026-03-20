@@ -1490,23 +1490,6 @@ function ProgressView({state,dispatch}){
 function App(){
   const [state,dispatch]=useReducer(reducer,init);
 
-  useEffect(()=>{
-    try{localStorage.setItem('bat-v1',JSON.stringify({prog:state.prog,week:state.week,logs:state.logs,bwLog:state.bwLog,units:state.units}));}
-    catch(e){}
-  },[state.prog,state.week,state.logs,state.bwLog,state.units]);
-
-  useEffect(()=>{
-    try{
-      const s=localStorage.getItem('bat-v1');
-      if(s){
-        const p=JSON.parse(s);
-        if(p.prog)dispatch({t:'PROG',p:p.prog});
-        if(p.week)dispatch({t:'WEEK',w:p.week});
-        if(p.units)dispatch({t:'UNITS',u:p.units});
-      }
-    }catch(e){}
-  },[]);
-
   const renderView=()=>{
     switch(state.view){
       case'dash':return <DashView state={state} dispatch={dispatch}/>;
