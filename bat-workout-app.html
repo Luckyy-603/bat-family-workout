@@ -1,0 +1,1590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bat-Family Hybrid · Mission Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07070a;--surf:#0e0e12;--surf2:#14141a;--surf3:#1c1c24;
+  --b1:#22222c;--b2:#2e2e3a;--b3:#3a3a4a;
+  --acc:#4d8eff;--acc-d:rgba(77,142,255,.12);--acc-g:rgba(77,142,255,.25);
+  --txt:#dcdce8;--td:#7c7c90;--tm:#4a4a5a;
+  --ok:#2ecc8a;--ok-d:rgba(46,204,138,.12);
+  --warn:#e8a838;--warn-d:rgba(232,168,56,.12);
+  --err:#e84848;--err-d:rgba(232,72,72,.12);
+  --bruce:#c8963c;--bruce-d:rgba(200,150,60,.12);
+  --nw:#4d8eff;--nw-d:rgba(77,142,255,.12);
+  --bb:#9b4dff;--bb-d:rgba(155,77,255,.12);
+  --jt:#e84848;--jt-d:rgba(232,72,72,.12);
+}
+html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;overflow-x:hidden;font-size:14px}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
+input{font-family:'JetBrains Mono',monospace;background:var(--surf2);border:1px solid var(--b2);color:var(--txt);border-radius:5px;padding:5px 6px;font-size:12px;text-align:center;width:100%;transition:border-color .2s;outline:none}
+input:focus{border-color:var(--acc)}input::placeholder{color:var(--tm)}
+textarea{font-family:'DM Sans',sans-serif;background:var(--surf2);border:1px solid var(--b1);color:var(--txt);border-radius:6px;padding:8px;font-size:13px;width:100%;resize:none;outline:none;transition:border-color .2s}
+textarea:focus{border-color:var(--acc)}textarea::placeholder{color:var(--tm)}
+button{cursor:pointer;border:none;background:none;color:inherit;font-family:inherit}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.fi{animation:fi .25s ease forwards}
+.pulse{animation:pulse 2s infinite}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useReducer,useCallback,useMemo,useRef,useEffect}=React;
+
+// ─── EXERCISE LIBRARY ─────────────────────────────────────────────────────────
+const EX={
+  'back-squat':{name:'Back Squat',cat:'strength',muscles:['Quads','Glutes','Hamstrings','Core'],
+    info:'Bar on upper traps, feet shoulder-width, toes slightly out. Brace core, drive knees out, squat to parallel or below. Drive through heels to stand. 3 ramp-up sets before working weight.'},
+  'weighted-pullups':{name:'Weighted Pull-Ups',cat:'strength',muscles:['Lats','Biceps','Rear Delts'],
+    info:'Hang from bar with overhand grip, weight secured via belt or dumbbell. Initiate with scapular retraction, drive elbows down, chin over bar. Control the descent. Full dead hang between reps.'},
+  'bench-press':{name:'Flat Barbell Bench Press',cat:'strength',muscles:['Chest','Triceps','Anterior Delts'],
+    info:'Feet flat, natural arch, bar at nipple line. Unrack, lower to chest with control, drive up explosively. Tuck elbows 45–75°. Never bounce the bar.'},
+  'romanian-deadlift':{name:'Romanian Deadlift',cat:'strength',muscles:['Hamstrings','Glutes','Lower Back'],
+    info:'Hip hinge with soft knees, bar stays close to legs. Feel stretch in hamstrings, drive hips forward to stand. Do not round lower back. Reset posture each rep.'},
+  'barbell-row':{name:'Barbell / CS Row',cat:'strength',muscles:['Lats','Rhomboids','Biceps'],
+    info:'Hinge to 45°, brace hard, drive elbows back. Squeeze scapulae at top. Control return. Chest-supported variant eliminates lower back fatigue — preferred.'},
+  'pendlay-row':{name:'Pendlay Row',cat:'strength',muscles:['Lats','Rhomboids','Biceps','Spinal Erectors'],
+    info:'Bar starts on floor each rep. Hinge to parallel, explosive pull to lower chest, controlled return to floor. True Pendlay = full reset. Power move.'},
+  'hanging-leg-raise':{name:'Hanging Leg Raises',cat:'core',muscles:['Hip Flexors','Abs','Core'],
+    info:'Dead hang, no swing. Initiate with abs pulling hips up, raise legs to 90° or higher. Lower slowly. Do not kip.'},
+  'hanging-knee-raise':{name:'Hanging Knee Raises',cat:'core',muscles:['Abs','Hip Flexors'],
+    info:'Regression from leg raises. Pull knees to chest. Control descent. Progress to legs straight over time.'},
+  'farmer-carry':{name:'Farmer Carries',cat:'conditioning',muscles:['Traps','Core','Grip','Legs'],
+    info:'Heavy dumbbells or KBs at sides. Walk with purpose, tall posture, braced core. Pack shoulders — do not let them hike. Go heavy.'},
+  'box-jump':{name:'Box Jumps',cat:'power',muscles:['Quads','Glutes','Calves'],
+    info:'Stand close to box. Quick countermovement, jump explosively, land softly on top with knees slightly bent. Step down — do not jump down to protect joints.'},
+  'broad-jump':{name:'Broad Jumps',cat:'power',muscles:['Glutes','Quads','Hamstrings'],
+    info:'Start standing. Swing arms, load hips back, jump forward as far as possible. Stick the landing, two feet together. Reset fully before next rep.'},
+  'lateral-bound':{name:'Lateral Bounds',cat:'power',muscles:['Glutes','Adductors','Calves'],
+    info:'Single-leg takeoff. Jump laterally, stick landing on opposite leg. Absorb force through hip and knee. No wobble. Build power and stability simultaneously.'},
+  'agility-ladder':{name:'Agility Ladder Drills',cat:'movement',muscles:['Calves','Hip Flexors','CNS'],
+    info:'Two feet in each box, in-in-out-out, lateral shuffles, quick sticks. Focus on speed and precision. Head up, stay on balls of feet. 10 full minutes.'},
+  'bear-crawl':{name:'Bear Crawls',cat:'movement',muscles:['Core','Shoulders','Hip Flexors'],
+    info:'Knees hover 1 inch off ground. Move opposite hand/foot simultaneously. Keep hips level and low — do not pike. Brace core throughout. Slow and deliberate.'},
+  'bulgarian-split-squat':{name:'Bulgarian Split Squats',cat:'strength',muscles:['Quads','Glutes','Hip Flexors'],
+    info:'Rear foot elevated, front foot far enough out. Sink rear knee toward floor, keep torso upright. Drive through front heel. These will humble you. Embrace it.'},
+  'chin-ups':{name:'Chin-Ups',cat:'strength',muscles:['Lats','Biceps','Core'],
+    info:'Supinated grip (palms facing you). Full hang to chin over bar. Strong peak contraction. Slow 3-second eccentric. These build lats and biceps simultaneously.'},
+  'dips':{name:'Dips',cat:'strength',muscles:['Triceps','Chest','Anterior Delts'],
+    info:'Slight forward lean for chest emphasis, upright for triceps. Lower until elbows at 90°+, drive up powerfully. Add weight when 10 unbroken is easy.'},
+  'db-press':{name:'Dumbbell Press',cat:'strength',muscles:['Chest','Triceps','Core'],
+    info:'Single-arm version: unilateral pressing challenges core. Press at slight angle, rotate wrist naturally through range. Control descent. Standing version works shoulder stability.'},
+  'kb-swing':{name:'Kettlebell Swings',cat:'conditioning',muscles:['Glutes','Hamstrings','Core','Back'],
+    info:'Hip hinge, not squat. Drive hips explosively — the bell floats, you do not lift it. Hike it back between legs. At top: standing plank. Every rep.'},
+  'ab-wheel':{name:'Ab Wheel Rollouts',cat:'core',muscles:['Abs','Core','Lats','Shoulders'],
+    info:'Knees on floor. Roll out slowly, maintain hollow body. Pull back with abs and lats — not arms. Go only as far as you can maintain lumbar position. Progress over weeks.'},
+  'side-plank':{name:'Side Plank',cat:'core',muscles:['Obliques','Core','Glutes'],
+    info:'Stacked feet or staggered. Drive hips up, body straight as a board from head to heel. Do not sag. Add hip dips for progression.'},
+  'hollow-body':{name:'Hollow Body Hold',cat:'core',muscles:['Abs','Core','Hip Flexors'],
+    info:'Lower back pressed to floor at all times. Arms overhead, legs straight and low. Maintain constant tension. The gymnastics foundation.'},
+  'dead-bug':{name:'Dead Bugs',cat:'core',muscles:['Deep Core','Hip Flexors','Abs'],
+    info:'Lower back pressed to floor ALWAYS. Extend opposite arm/leg slowly, return. Core bracing throughout. Never let the arch creep in.'},
+  'sprint-100m':{name:'100m Sprints',cat:'conditioning',muscles:['Full Body','CNS','Glutes','Hamstrings'],
+    info:'Drive out of stance, accelerate through 40m, maintain form through 100m. Walk back is full recovery. Quality over panic. Count these as W.'},
+  'sprint-200m':{name:'200m Sprints',cat:'conditioning',muscles:['Full Body','Cardiovascular','Lactate Threshold'],
+    info:'Hard pace — not all-out but maximally uncomfortable. Maintain mechanics through the back half. 90 sec rest is intentionally short.'},
+  'hill-sprint':{name:'Hill Sprints',cat:'conditioning',muscles:['Glutes','Hamstrings','Calves','Lungs'],
+    info:'15-second all-out uphill. Walk down slowly for recovery. Incline forces proper sprint mechanics and reduces injury risk vs flat sprinting.'},
+  'burpee':{name:'Burpees',cat:'conditioning',muscles:['Full Body','Cardiovascular'],
+    info:'Drop to floor, chest touches, explosive jump with arms overhead. Maintain pace, do not sacrifice position. These are non-negotiable. No half reps.'},
+  'mountain-climber':{name:'Mountain Climbers',cat:'conditioning',muscles:['Core','Hip Flexors','Shoulders'],
+    info:'Plank position. Drive knees to chest alternately. Keep hips level — do not pike. Fast hands, fast feet. Count each side.'},
+  'jump-rope':{name:'Jump Rope',cat:'conditioning',muscles:['Calves','Cardiovascular','Coordination'],
+    info:'Stay on balls of feet. Small jumps, tight rotations from wrists. Work toward double-unders for advanced progression.'},
+  'shuttle-run':{name:'Shuttle Runs (5-10-5)',cat:'conditioning',muscles:['Glutes','Quads','CNS','Lateral'],
+    info:'Sprint 5 yards, touch, sprint 10 yards, touch, sprint 5 back. Maximum change-of-direction speed. Every round max effort.'},
+  'walking-lunge':{name:'Walking Lunges',cat:'strength',muscles:['Quads','Glutes','Hamstrings','Balance'],
+    info:'Long stride, 90° both knees, push off front foot forward. Keep torso tall. Add dumbbells or barbell to progress.'},
+  'push-up':{name:'Push-Ups',cat:'strength',muscles:['Chest','Triceps','Core'],
+    info:'Hands slightly wider than shoulders, elbows 45°. Full range from lockout to chest near floor. Body in straight line. Tempo: 2 down, 1 up.'},
+  'pull-up':{name:'Pull-Ups',cat:'strength',muscles:['Lats','Biceps','Core'],
+    info:'Dead hang, overhand grip. Drive elbows down. Chin clears bar. Controlled descent. No kipping. The gold standard.'},
+  'air-squat':{name:'Air Squats',cat:'conditioning',muscles:['Quads','Glutes'],
+    info:'Feet shoulder-width. Hips back and down. Knees tracking out. Below parallel. Stand tall at top. High rep conditioning movement.'},
+  'deadlift':{name:'Deadlift',cat:'strength',muscles:['Hamstrings','Glutes','Back','Core','Grip'],
+    info:'Bar over mid-foot, hinge down, big breath, brace. Leg press the floor away. Bar stays in contact with legs. Lock out hips and knees together. Reset each rep.'},
+  'overhead-press':{name:'Standing Overhead Press',cat:'strength',muscles:['Shoulders','Triceps','Core'],
+    info:'Bar at upper chest. Brace everything — abs, glutes. Press straight up, finish with ears in front of arms. No leg drive (strict press).'},
+  'push-press':{name:'Push Press',cat:'power',muscles:['Shoulders','Triceps','Legs','Core'],
+    info:'Slight dip in knees, drive up explosively, press overhead. Use leg drive to overcome sticking point. Heavier than strict press. Lock out fully at top.'},
+  'incline-db-press':{name:'Incline Dumbbell Press',cat:'strength',muscles:['Upper Chest','Anterior Delts','Triceps'],
+    info:'30–45° incline. Lower bells to upper chest with control. Press up and slightly in. Do not excessively flare elbows.'},
+  'weighted-dips':{name:'Weighted Dips',cat:'strength',muscles:['Triceps','Chest','Shoulders'],
+    info:'Belt or dumbbell between legs. Same mechanics as bodyweight but now we mean business. Full range required — no partial reps for credit.'},
+  'sled-push':{name:'Sled Pushes / Prowler',cat:'conditioning',muscles:['Quads','Glutes','Cardiovascular','Core'],
+    info:'Low handles, lean in hard. Drive with legs, not arms. Short fast steps. Fully commit for the distance. Load it heavy. These are war.'},
+  'heavy-bag':{name:'Heavy Bag Work',cat:'conditioning',muscles:['Shoulders','Core','Cardiovascular','Grip'],
+    info:'2-minute rounds. Combinations: jab-cross, hooks, uppercuts, body shots. Move your feet between combos. No sloppy brawling — disciplined output only.'},
+  'landmine-rotation':{name:'Landmine Rotations',cat:'core',muscles:['Obliques','Core','Shoulders'],
+    info:'Landmine in corner or sleeve. Hold far end with both hands, arms extended. Rotate side to side through full ROM. Control the bell at all times.'},
+  'russian-twist':{name:'Russian Twists',cat:'core',muscles:['Obliques','Core','Hip Flexors'],
+    info:'Feet off floor (harder) or planted. Hold plate or KB. Rotate fully side to side — touch the floor. Keep chest tall.'},
+  'cable-chop':{name:'Cable Chops',cat:'core',muscles:['Obliques','Core','Shoulders'],
+    info:'High-to-low or low-to-high. Rotate through thoracic spine. Resist extension. Control the return. Feel the obliques working.'},
+  'front-squat':{name:'Front Squat',cat:'strength',muscles:['Quads','Core','Upper Back'],
+    info:'Clean grip or cross-arm. Elbows HIGH throughout — this is the whole game. More upright torso than back squat. Demands serious ankle mobility. Earn it.'},
+  'incline-bench':{name:'Incline Bench Press',cat:'strength',muscles:['Upper Chest','Shoulders','Triceps'],
+    info:'30–45° incline. Bar to upper chest. Same mechanics as flat but requires shoulder stability. Do not flare elbows.'},
+  'neutral-grip-pullups':{name:'Neutral-Grip Pull-Ups',cat:'strength',muscles:['Lats','Biceps','Brachialis'],
+    info:'Parallel grip handles. Neutral grip is joint-friendly and allows strong contraction. Full range, controlled pace. Add weight when 6 is easy.'},
+  'db-rdl':{name:'Dumbbell RDL',cat:'strength',muscles:['Hamstrings','Glutes'],
+    info:'Same hinge mechanics as barbell RDL but dumbbell allows more natural path. Unilateral single-leg variation excellent for addressing imbalances.'},
+  'face-pull':{name:'Face Pulls',cat:'strength',muscles:['Rear Delts','Rotator Cuff','Rhomboids'],
+    info:'Cable at face height, rope attachment. Pull to face with elbows high. External rotation at end range. Non-negotiable for shoulder health in every push-heavy program.'},
+  'shrug-carry':{name:'Shrugs / Trap Bar Carries',cat:'strength',muscles:['Traps','Forearms','Core'],
+    info:'Full ROM shrug up and back, not just up. Carries: keep shoulders packed, walk tall. Heavy. Always heavy. Trap strength protects the neck.'},
+  'battle-rope':{name:'Battle Ropes / Shadowboxing',cat:'conditioning',muscles:['Shoulders','Core','Cardiovascular'],
+    info:'Alternating waves, power slams, or continuous circles. Shadowboxing: stick and move, combinations with intent. 30 seconds of maximum output.'},
+  'neck-work':{name:'Neck Flexion/Extension',cat:'durability',muscles:['Neck','Cervical Stability'],
+    info:'Plate on forehead/back of head or neck harness. Slow, controlled. Build gradually — no rushing here. Neck strength is serious combat preparation.'},
+  'towel-hang':{name:'Towel Hangs / Plate Pinches',cat:'durability',muscles:['Forearms','Grip','Fingers'],
+    info:'Towel draped over bar — grip and hang for time. Plate pinches: 2 plates smooth side out, pinch and hold. Grip training pays dividends across every lift.'},
+  'reverse-lunge':{name:'Reverse Lunges',cat:'strength',muscles:['Quads','Glutes','Hamstrings'],
+    info:'Step back, 90° both knees. Easier on knees than forward lunges. Weight in front heel. Progress with dumbbells or barbell.'},
+  'ring-row':{name:'Ring Rows / TRX Rows',cat:'strength',muscles:['Lats','Rhomboids','Biceps'],
+    info:'The more horizontal your body, the harder. Chest to rings/handles, retract scapulae. Elevate feet to progress further.'},
+  'deep-squat-hold':{name:'Deep Squat Hold',cat:'mobility',muscles:['Hips','Ankles','Adductors'],
+    info:'Heels down, hips below knees. Use a post for support if needed. Breathe and sink lower over time. Improve 30 seconds each month.'},
+  'hip-opener':{name:'Hip Openers / Mobility Flow',cat:'mobility',muscles:['Hip Capsule','Glutes','Adductors'],
+    info:'90/90 switches, pigeon, lateral lunges, world\'s greatest stretch. Move slowly, breathe into restriction. Do not force — explore range.'},
+  'shoulder-mobility':{name:'Shoulder Mobility Work',cat:'mobility',muscles:['Shoulder Capsule','Rotator Cuff'],
+    info:'Banded distractions, arm circles, sleeper stretch, cross-body stretch. Rotate through full ranges. Daily investment with compound interest.'},
+  'tspine-work':{name:'T-Spine Work',cat:'mobility',muscles:['Thoracic Spine','Lats'],
+    info:'Foam roller extensions, thread-the-needle, book openings. Thoracic mobility supports every press and overhead movement. Non-negotiable.'},
+  'balance-drill':{name:'Balance / Single-Leg Stability',cat:'mobility',muscles:['Proprioception','Ankles','Core'],
+    info:'Single-leg RDL, single-leg balance with reach, lateral steps on unstable surface. Build the proprioceptive foundation.'},
+  'light-cardio':{name:'Light Cardio',cat:'warmup',muscles:['Cardiovascular','Full Body'],
+    info:'3–5 minutes easy: jog, jump rope, row, assault bike. Get blood moving, core temperature up. Not a sprint, not a stroll.'},
+  'dynamic-warmup':{name:'Dynamic Hip & Shoulder Warmup',cat:'warmup',muscles:['Hips','Shoulders','Spine'],
+    info:'Leg swings front/side, arm circles, hip circles, world\'s greatest stretch. Wake up the joints. 2 minutes of movement quality.'},
+  'bw-squat':{name:'Bodyweight Squats',cat:'warmup',muscles:['Quads','Glutes'],
+    info:'10 reps. Full range. Start slow, pick up pace. Prep for loaded squatting. Cue: knees out, chest up.'},
+  'warmup-lunge':{name:'Lunges (Warmup)',cat:'warmup',muscles:['Hip Flexors','Quads','Glutes'],
+    info:'10 alternating lunges. Add thoracic rotation for T-spine prep. Long stride.'},
+  'band-pullthrough':{name:'Band Pull-Aparts',cat:'warmup',muscles:['Rear Delts','Rhomboids'],
+    info:'10 reps. Hands outside shoulders, pull apart fully. Cue: "break the band." Shoulder health insurance.'},
+  'scap-pushup':{name:'Scap Push-Ups',cat:'warmup',muscles:['Serratus Anterior','Scapular Stabilizers'],
+    info:'10 reps. Plank position, let chest sink between shoulder blades, then push scapulae apart. Pure scapular movement — joints only, no elbows.'},
+};
+
+// ─── PROGRAM DATA ─────────────────────────────────────────────────────────────
+const WARMUP_EX=[
+  {exId:'light-cardio',reps:'3–5 min',note:'Light cardio to raise core temp'},
+  {exId:'dynamic-warmup',reps:'2 min',note:'Dynamic hips and shoulders'},
+  {exId:'bw-squat',reps:'10',note:''},
+  {exId:'warmup-lunge',reps:'10',note:''},
+  {exId:'band-pullthrough',reps:'10',note:''},
+  {exId:'scap-pushup',reps:'10',note:''},
+];
+
+const CHAR={
+  bruce:{color:'#c8963c',dim:'rgba(200,150,60,.12)',label:'STRENGTH'},
+  nightwing:{color:'#4d8eff',dim:'rgba(77,142,255,.12)',label:'MOVEMENT'},
+  batman_beyond:{color:'#9b4dff',dim:'rgba(155,77,255,.12)',label:'CONDITIONING'},
+  jason:{color:'#e84848',dim:'rgba(232,72,72,.12)',label:'POWER'},
+};
+
+const BLOCK_COLORS={
+  main:'#c8963c',accessory:'#4d8eff',conditioning:'#9b4dff',core:'#2ecc8a',
+  power:'#e84848',mobility:'#4a9a9a',durability:'#7c7c90',warmup:'#5a5a6a',
+};
+
+const P5={
+  id:'5day',name:'5-Day Bat-Family Hybrid',short:'5-Day',
+  desc:'Five training days. Two full rest days. Strength, movement, conditioning, and power in weekly sequence.',
+  days:[
+    {id:'5d1',num:1,name:'Bruce Wayne Strength I',char:'bruce',theme:'Strength',warmup:true,blocks:[
+      {name:'Main Lifts',type:'main',ex:[
+        {id:'back-squat',sets:5,reps:'5',rest:'3–4 min',note:'Establish working weight Week 1. Add load weekly.'},
+        {id:'weighted-pullups',sets:5,reps:'5',rest:'3 min',note:'Use belt or dumbbell. Scale with bands if needed.'},
+        {id:'bench-press',sets:5,reps:'5',rest:'3 min',note:'Flat barbell. Set arch and leg drive every set.'},
+      ]},
+      {name:'Secondary Work',type:'accessory',ex:[
+        {id:'romanian-deadlift',sets:4,reps:'6',rest:'2 min',note:'Hamstring stretch at bottom. Do not round.'},
+        {id:'barbell-row',sets:4,reps:'8',rest:'90 sec',note:'Chest-supported preferred. Control tempo.'},
+        {id:'hanging-leg-raise',sets:4,reps:'12',rest:'60 sec',note:'No swinging. Legs straight if possible.'},
+        {id:'farmer-carry',sets:4,reps:'30–40m',rest:'90 sec',note:'Heavy. Walk with purpose.'},
+      ]},
+      {name:'Finish',type:'mobility',ex:[
+        {id:'hip-opener',sets:1,reps:'10 min',rest:null,note:'Hips, ankles, T-spine, shoulders. Non-negotiable.'},
+      ]},
+    ]},
+    {id:'5d2',num:2,name:'Nightwing Movement + Athletic Upper',char:'nightwing',theme:'Movement',warmup:true,blocks:[
+      {name:'Power / Movement',type:'power',ex:[
+        {id:'box-jump',sets:5,reps:'3',rest:'2 min',note:'Stick every landing. Quality over quantity.'},
+        {id:'broad-jump',sets:4,reps:'3',rest:'90 sec',note:'Max horizontal distance. Stick the landing.'},
+        {id:'agility-ladder',sets:1,reps:'10 min',rest:null,note:'2-in-2-out, lateral shuffles, icky shuffle.'},
+        {id:'bear-crawl',sets:4,reps:'20m',rest:'60 sec',note:'Knees 1 inch off floor. No sloppy hips.'},
+      ]},
+      {name:'Strength / Athletic Hypertrophy',type:'accessory',ex:[
+        {id:'bulgarian-split-squat',sets:4,reps:'8 each',rest:'90 sec',note:'Each leg. Character-building.'},
+        {id:'chin-ups',sets:4,reps:'8',rest:'90 sec',note:'Supinated grip. Slow eccentric.'},
+        {id:'dips',sets:4,reps:'10',rest:'90 sec',note:'Full ROM. Add weight when 10 is easy.'},
+        {id:'db-press',sets:3,reps:'10 each',rest:'60 sec',note:'Single arm. Brace core on each rep.'},
+        {id:'kb-swing',sets:4,reps:'15',rest:'60 sec',note:'Hip drive. Russian or American.'},
+      ]},
+      {name:'Core',type:'core',ex:[
+        {id:'ab-wheel',sets:4,reps:'10',rest:'60 sec',note:'Knees if needed. Full extension target.'},
+        {id:'side-plank',sets:3,reps:'30–45 sec each',rest:'45 sec',note:'Each side. Drive hip up.'},
+      ]},
+    ]},
+    {id:'5d3',num:3,name:'Batman Beyond Conditioning',char:'batman_beyond',theme:'Conditioning',warmup:true,blocks:[
+      {name:'Sprint Block',type:'conditioning',ex:[
+        {id:'sprint-100m',sets:10,reps:'100m',rest:'Walk back',note:'Option: 8x15-sec hill sprints, 60–90 sec rest.'},
+      ]},
+      {name:'Conditioning Circuit',type:'conditioning',ex:[
+        {id:'burpee',sets:'4–5',reps:'15',rest:'90 sec between rounds',note:'4–5 rounds of this full circuit.'},
+        {id:'push-up',sets:null,reps:'20',rest:null,note:'Part of circuit.'},
+        {id:'walking-lunge',sets:null,reps:'20 each',rest:null,note:'Part of circuit.'},
+        {id:'pull-up',sets:null,reps:'10',rest:null,note:'Or bodyweight rows.'},
+        {id:'mountain-climber',sets:null,reps:'30 each side',rest:null,note:'Part of circuit.'},
+        {id:'jump-rope',sets:null,reps:'1 min',rest:null,note:'Part of circuit.'},
+      ]},
+      {name:'Movement Finish',type:'conditioning',ex:[
+        {id:'shuttle-run',sets:6,reps:'5-10-5',rest:'60 sec',note:'Max change-of-direction speed.'},
+        {id:'hip-opener',sets:1,reps:'10–15 min',rest:null,note:'Full mobility flow. Earn it.'},
+      ]},
+    ]},
+    {id:'5d4',num:4,name:'Jason Todd Power',char:'jason',theme:'Power',warmup:true,blocks:[
+      {name:'Main Lifts',type:'main',ex:[
+        {id:'deadlift',sets:5,reps:'3',rest:'4–5 min',note:'Heaviest day of the week. Reset each rep or touch-and-go.'},
+        {id:'overhead-press',sets:5,reps:'5',rest:'3 min',note:'Strict press. No leg drive. Own it.'},
+        {id:'barbell-row',sets:5,reps:'6',rest:'2–3 min',note:'Heavy.'},
+      ]},
+      {name:'Secondary Work',type:'accessory',ex:[
+        {id:'incline-db-press',sets:4,reps:'8',rest:'90 sec',note:'Upper chest focus.'},
+        {id:'weighted-dips',sets:4,reps:'8',rest:'90 sec',note:'Belt or dumbbell. Full depth.'},
+        {id:'sled-push',sets:6,reps:'20–30m',rest:'90 sec',note:'Load heavy. These are war.'},
+        {id:'heavy-bag',sets:8,reps:'2 min',rest:'60 sec',note:'8 rounds. Combinations with intent.'},
+      ]},
+      {name:'Core / Rotational',type:'core',ex:[
+        {id:'landmine-rotation',sets:4,reps:'12 each',rest:'60 sec',note:'Full rotation.'},
+        {id:'russian-twist',sets:3,reps:'20 total',rest:'60 sec',note:'Feet off floor. Add weight.'},
+      ]},
+    ]},
+    {id:'5d5',num:5,name:'Bruce Wayne Strength II + Combat Engine',char:'bruce',theme:'Strength',warmup:true,blocks:[
+      {name:'Main Lifts',type:'main',ex:[
+        {id:'front-squat',sets:4,reps:'6',rest:'3 min',note:'Elbows high. Demands ankle and T-spine mobility.'},
+        {id:'incline-bench',sets:4,reps:'6',rest:'3 min',note:'Upper chest. Shoulder-safe angle.'},
+        {id:'neutral-grip-pullups',sets:4,reps:'6',rest:'2–3 min',note:'Weighted if 6 is easy.'},
+      ]},
+      {name:'Secondary Work',type:'accessory',ex:[
+        {id:'walking-lunge',sets:3,reps:'20 steps',rest:'90 sec',note:'Add dumbbells for load.'},
+        {id:'db-rdl',sets:3,reps:'10',rest:'90 sec',note:'Dumbbell RDL.'},
+        {id:'face-pull',sets:4,reps:'15',rest:'60 sec',note:'Non-negotiable for shoulders.'},
+        {id:'shrug-carry',sets:4,reps:'30–40m',rest:'90 sec',note:'Traps and grip.'},
+      ]},
+      {name:'Combat Engine Finisher',type:'conditioning',ex:[
+        {id:'pull-up',sets:5,reps:'5',rest:'Minimal between',note:'5 rounds of this full circuit.'},
+        {id:'push-up',sets:null,reps:'10',rest:null,note:'Part of circuit.'},
+        {id:'air-squat',sets:null,reps:'15',rest:null,note:'Part of circuit.'},
+        {id:'kb-swing',sets:null,reps:'10',rest:null,note:'Part of circuit.'},
+        {id:'battle-rope',sets:null,reps:'30 sec',rest:'60 sec between rounds',note:'Battle ropes or shadowboxing. 5 rounds.'},
+      ]},
+      {name:'Durability',type:'durability',ex:[
+        {id:'neck-work',sets:3,reps:'15 each dir',rest:'60 sec',note:'Build gradually. Harness or plate.'},
+        {id:'towel-hang',sets:3,reps:'30–45 sec',rest:'60 sec',note:'Towel hang or plate pinch.'},
+      ]},
+    ]},
+  ],
+};
+
+const P6={
+  id:'6day',name:'6-Day Bat-Family Hybrid',short:'6-Day',
+  desc:'Six training days. One full rest day. Higher volume, higher frequency for serious athletes.',
+  days:[
+    {id:'6d1',num:1,name:'Bruce Heavy Lower + Pull',char:'bruce',theme:'Strength',warmup:true,blocks:[
+      {name:'Main Lifts',type:'main',ex:[
+        {id:'back-squat',sets:5,reps:'5',rest:'3–4 min',note:'Primary lower day.'},
+        {id:'weighted-pullups',sets:5,reps:'5',rest:'3 min',note:'Belt loaded. Full hang.'},
+      ]},
+      {name:'Assistance',type:'accessory',ex:[
+        {id:'romanian-deadlift',sets:4,reps:'6',rest:'2 min',note:''},
+        {id:'barbell-row',sets:4,reps:'8',rest:'90 sec',note:''},
+        {id:'reverse-lunge',sets:3,reps:'10 each',rest:'90 sec',note:''},
+        {id:'hanging-knee-raise',sets:4,reps:'12',rest:'60 sec',note:''},
+        {id:'farmer-carry',sets:4,reps:'30–40m',rest:'90 sec',note:''},
+      ]},
+      {name:'Finish',type:'mobility',ex:[
+        {id:'hip-opener',sets:1,reps:'8–10 min',rest:null,note:'Full mobility flow.'},
+      ]},
+    ]},
+    {id:'6d2',num:2,name:'Nightwing Movement + Upper',char:'nightwing',theme:'Movement',warmup:true,blocks:[
+      {name:'Explosive Work',type:'power',ex:[
+        {id:'box-jump',sets:5,reps:'3',rest:'2 min',note:''},
+        {id:'lateral-bound',sets:4,reps:'4 each',rest:'90 sec',note:'Stick landing. Each side.'},
+        {id:'agility-ladder',sets:1,reps:'10 min',rest:null,note:''},
+        {id:'bear-crawl',sets:4,reps:'20m',rest:'60 sec',note:''},
+      ]},
+      {name:'Upper Athletic Work',type:'accessory',ex:[
+        {id:'dips',sets:4,reps:'10',rest:'90 sec',note:''},
+        {id:'chin-ups',sets:4,reps:'8',rest:'90 sec',note:''},
+        {id:'db-press',sets:4,reps:'8 each',rest:'90 sec',note:'Standing dumbbell press.'},
+        {id:'ring-row',sets:3,reps:'12',rest:'60 sec',note:'Or TRX rows.'},
+        {id:'kb-swing',sets:4,reps:'15',rest:'60 sec',note:''},
+      ]},
+      {name:'Core',type:'core',ex:[
+        {id:'ab-wheel',sets:4,reps:'10',rest:'60 sec',note:''},
+        {id:'hollow-body',sets:3,reps:'30 sec',rest:'45 sec',note:''},
+      ]},
+    ]},
+    {id:'6d3',num:3,name:'Batman Beyond Speed + Conditioning',char:'batman_beyond',theme:'Conditioning',warmup:true,blocks:[
+      {name:'Sprint Block',type:'conditioning',ex:[
+        {id:'sprint-200m',sets:6,reps:'200m',rest:'90 sec',note:'Option: 10×100m walk-back.'},
+      ]},
+      {name:'Conditioning Ladder',type:'conditioning',ex:[
+        {id:'burpee',sets:3,reps:'10',rest:'60 sec between rounds',note:'3 rounds of this block.'},
+        {id:'push-up',sets:null,reps:'15',rest:null,note:'Part of ladder.'},
+        {id:'air-squat',sets:null,reps:'20',rest:null,note:'Part of ladder.'},
+        {id:'mountain-climber',sets:null,reps:'25 each side',rest:null,note:'Part of ladder.'},
+        {id:'jump-rope',sets:null,reps:'30 sec',rest:null,note:'Part of ladder.'},
+      ]},
+      {name:'Finish',type:'conditioning',ex:[
+        {id:'shuttle-run',sets:6,reps:'5-10-5',rest:'60 sec',note:''},
+        {id:'jump-rope',sets:1,reps:'5 min total',rest:null,note:''},
+        {id:'hip-opener',sets:1,reps:'15 min',rest:null,note:'Earn it.'},
+      ]},
+    ]},
+    {id:'6d4',num:4,name:'Bruce Heavy Push + Lower Assistance',char:'bruce',theme:'Strength',warmup:true,blocks:[
+      {name:'Main Lifts',type:'main',ex:[
+        {id:'bench-press',sets:5,reps:'5',rest:'3 min',note:''},
+        {id:'front-squat',sets:4,reps:'6',rest:'3 min',note:'Elbows high.'},
+      ]},
+      {name:'Assistance',type:'accessory',ex:[
+        {id:'incline-db-press',sets:4,reps:'8',rest:'90 sec',note:''},
+        {id:'barbell-row',sets:4,reps:'10',rest:'90 sec',note:'Chest-supported.'},
+        {id:'bulgarian-split-squat',sets:3,reps:'8 each',rest:'90 sec',note:''},
+        {id:'face-pull',sets:4,reps:'15',rest:'60 sec',note:''},
+        {id:'hanging-leg-raise',sets:4,reps:'10',rest:'60 sec',note:''},
+      ]},
+      {name:'Finish',type:'accessory',ex:[
+        {id:'farmer-carry',sets:4,reps:'30–40m',rest:'90 sec',note:'Loaded carry variation.'},
+      ]},
+    ]},
+    {id:'6d5',num:5,name:'Jason Todd Power + Combat',char:'jason',theme:'Power',warmup:true,blocks:[
+      {name:'Main Lifts',type:'main',ex:[
+        {id:'deadlift',sets:5,reps:'3',rest:'4–5 min',note:'Max effort day.'},
+        {id:'overhead-press',sets:5,reps:'5',rest:'3 min',note:''},
+        {id:'pendlay-row',sets:4,reps:'6',rest:'2–3 min',note:'Reset to floor each rep.'},
+      ]},
+      {name:'Power Assistance',type:'accessory',ex:[
+        {id:'push-press',sets:4,reps:'3',rest:'2 min',note:'Leg drive. Heavier than strict press.'},
+        {id:'weighted-dips',sets:4,reps:'8',rest:'90 sec',note:''},
+        {id:'sled-push',sets:6,reps:'20–30m',rest:'90 sec',note:''},
+      ]},
+      {name:'Combat Conditioning',type:'conditioning',ex:[
+        {id:'heavy-bag',sets:10,reps:'2 min',rest:'45–60 sec',note:'10 rounds. Disciplined combinations.'},
+      ]},
+      {name:'Rotational / Trunk',type:'core',ex:[
+        {id:'landmine-rotation',sets:4,reps:'12 each',rest:'60 sec',note:''},
+        {id:'cable-chop',sets:3,reps:'12 each',rest:'60 sec',note:''},
+      ]},
+    ]},
+    {id:'6d6',num:6,name:'Nightwing/Terry Athletic Recovery + Core',char:'nightwing',theme:'Recovery',warmup:false,blocks:[
+      {name:'Low-Impact Conditioning',type:'conditioning',ex:[
+        {id:'light-cardio',sets:1,reps:'30–40 min',rest:null,note:'Incline walk, easy run, or assault bike/rower at moderate pace.'},
+      ]},
+      {name:'Movement Block',type:'mobility',ex:[
+        {id:'deep-squat-hold',sets:2,reps:'45 sec',rest:'30 sec',note:''},
+        {id:'hip-opener',sets:1,reps:'5 min',rest:null,note:''},
+        {id:'shoulder-mobility',sets:1,reps:'5 min',rest:null,note:''},
+        {id:'tspine-work',sets:1,reps:'5 min',rest:null,note:''},
+        {id:'balance-drill',sets:1,reps:'10 min',rest:null,note:''},
+      ]},
+      {name:'Bodyweight Skill Circuit',type:'conditioning',ex:[
+        {id:'push-up',sets:'3–4',reps:'15',rest:'60 sec between rounds',note:'3–4 rounds.'},
+        {id:'pull-up',sets:null,reps:'5–8',rest:null,note:'Part of circuit.'},
+        {id:'walking-lunge',sets:null,reps:'20 steps',rest:null,note:'Part of circuit.'},
+        {id:'bear-crawl',sets:null,reps:'20m',rest:null,note:'Part of circuit.'},
+        {id:'hollow-body',sets:null,reps:'45 sec',rest:null,note:'Plank or hollow body.'},
+      ]},
+      {name:'Core',type:'core',ex:[
+        {id:'side-plank',sets:3,reps:'45 sec each',rest:'30 sec',note:''},
+        {id:'dead-bug',sets:3,reps:'12 each side',rest:'30 sec',note:''},
+      ]},
+    ]},
+  ],
+};
+
+const PROGRAMS={'5day':P5,'6day':P6};
+
+const PROGRESSION=[
+  {wk:1,phase:'Establish',color:'#4d8eff',tip:'Set your working weight. Leave 1–2 reps in the tank. This is baseline.'},
+  {wk:2,phase:'Build',color:'#2ecc8a',tip:'Add 5 lbs upper / 10 lbs lower if Week 1 was clean. Make the jump.'},
+  {wk:3,phase:'Build',color:'#2ecc8a',tip:'Add another small increment. Execution quality first. No grinding reps.'},
+  {wk:4,phase:'Peak',color:'#e8a838',tip:'Match or exceed Week 3. If form breaks, hold the weight and nail the reps.'},
+  {wk:5,phase:'Deload',color:'#9b4dff',tip:'Deload. 85–90% of Week 4 volume/load. Full recovery. You earned it.'},
+];
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+const init={
+  prog:'5day',week:1,view:'dash',dayId:null,
+  logs:{},bwLog:[],exSearch:'',exDetail:null,
+  expandEx:{},showWarmup:false,units:'lbs',
+};
+
+function reducer(s,a){
+  switch(a.t){
+    case'NAV':return{...s,view:a.v,dayId:a.d??s.dayId};
+    case'PROG':return{...s,prog:a.p,view:'dash',dayId:null};
+    case'WEEK':return{...s,week:Math.max(1,Math.min(52,a.w))};
+    case'DAY':return{...s,view:'workout',dayId:a.id};
+    case'TOGGLE_WARMUP':return{...s,showWarmup:!s.showWarmup};
+    case'TOGGLE_EX':{
+      const k=`${a.d}-${a.bi}-${a.ei}`;
+      return{...s,expandEx:{...s.expandEx,[k]:!s.expandEx[k]}};
+    }
+    case'SET_LOG':{
+      const{dayId:d,bi,ei,si,field,val}=a;
+      const wk=`w${s.week}`;
+      const L=JSON.parse(JSON.stringify(s.logs));
+      L[wk]=L[wk]||{};L[wk][d]=L[wk][d]||{};
+      const k=`${bi}-${ei}`;
+      L[wk][d][k]=L[wk][d][k]||{sets:[],notes:'',done:false};
+      L[wk][d][k].sets[si]=L[wk][d][k].sets[si]||{reps:'',weight:'',done:false};
+      L[wk][d][k].sets[si][field]=val;
+      return{...s,logs:L};
+    }
+    case'TOGGLE_SET':{
+      const{dayId:d,bi,ei,si}=a;
+      const wk=`w${s.week}`;
+      const L=JSON.parse(JSON.stringify(s.logs));
+      L[wk]=L[wk]||{};L[wk][d]=L[wk][d]||{};
+      const k=`${bi}-${ei}`;
+      L[wk][d][k]=L[wk][d][k]||{sets:[],notes:'',done:false};
+      L[wk][d][k].sets[si]=L[wk][d][k].sets[si]||{reps:'',weight:'',done:false};
+      L[wk][d][k].sets[si].done=!L[wk][d][k].sets[si].done;
+      return{...s,logs:L};
+    }
+    case'LOG_NOTES':{
+      const{dayId:d,bi,ei,notes}=a;
+      const wk=`w${s.week}`;
+      const L=JSON.parse(JSON.stringify(s.logs));
+      L[wk]=L[wk]||{};L[wk][d]=L[wk][d]||{};
+      const k=`${bi}-${ei}`;
+      L[wk][d][k]=L[wk][d][k]||{sets:[],notes:'',done:false};
+      L[wk][d][k].notes=notes;
+      return{...s,logs:L};
+    }
+    case'COMPLETE_DAY':{
+      const wk=`w${s.week}`;
+      const L=JSON.parse(JSON.stringify(s.logs));
+      L[wk]=L[wk]||{};L[wk][a.id]=L[wk][a.id]||{};
+      L[wk][a.id].__done=!L[wk][a.id].__done;
+      return{...s,logs:L};
+    }
+    case'LOG_BW':{
+      const today=new Date().toISOString().split('T')[0];
+      const log=s.bwLog.filter(e=>e.date!==today);
+      return{...s,bwLog:[...log,{date:today,w:parseFloat(a.w)}].sort((a,b)=>a.date<b.date?-1:1)};
+    }
+    case'EX_SEARCH':return{...s,exSearch:a.q};
+    case'EX_DETAIL':return{...s,exDetail:a.id,view:'exdetail'};
+    case'UNITS':return{...s,units:a.u};
+    default:return s;
+  }
+}
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+function getLog(logs,week,dayId,bi,ei){
+  return logs[`w${week}`]?.[dayId]?.[`${bi}-${ei}`]||{sets:[],notes:'',done:false};
+}
+function isDayDone(logs,week,dayId){return!!(logs[`w${week}`]?.[dayId]?.__done);}
+function getStreak(logs,prog,week){
+  const p=PROGRAMS[prog];let streak=0;
+  for(let w=week;w>=1;w--){
+    const wk=`w${w}`;
+    let allDone=true;
+    for(const d of p.days){
+      if(!logs[wk]?.[d.id]?.__done){allDone=false;break;}
+    }
+    if(allDone)streak++;else break;
+  }
+  return streak;
+}
+function getWeekProgress(logs,prog,week){
+  const p=PROGRAMS[prog];let done=0;
+  for(const d of p.days){if(logs[`w${week}`]?.[d.id]?.__done)done++;}
+  return{done,total:p.days.length};
+}
+function getPhase(week){
+  const cycle=((week-1)%5)+1;
+  return PROGRESSION[cycle-1]||PROGRESSION[0];
+}
+function catColor(cat){
+  const m={strength:'#4d8eff',conditioning:'#9b4dff',power:'#e84848',core:'#2ecc8a',
+    mobility:'#4a9a9a',movement:'#c8963c',warmup:'#5a5a6a',durability:'#7c7c90'};
+  return m[cat]||'#5a5a6a';
+}
+
+// ─── UI PRIMITIVES ────────────────────────────────────────────────────────────
+const S={
+  card:{background:'var(--surf)',border:'1px solid var(--b1)',borderRadius:'10px',overflow:'hidden'},
+  card2:{background:'var(--surf2)',border:'1px solid var(--b1)',borderRadius:'8px'},
+  row:{display:'flex',alignItems:'center',gap:'8px'},
+  col:{display:'flex',flexDirection:'column',gap:'8px'},
+  label:{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'11px',fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'var(--td)'},
+  num:{fontFamily:"'JetBrains Mono',monospace"},
+};
+
+function Badge({text,color,small}){
+  return <span style={{
+    display:'inline-flex',alignItems:'center',padding:small?'2px 6px':'3px 8px',
+    borderRadius:'3px',background:`${color}22`,border:`1px solid ${color}44`,
+    fontFamily:"'Barlow Condensed',sans-serif",fontSize:small?'10px':'11px',
+    fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color,
+  }}>{text}</span>;
+}
+
+function Divider(){return <div style={{height:'1px',background:'var(--b1)',margin:'4px 0'}}/>;}
+
+function ProgressBar({pct,color='var(--acc)'}){
+  return <div style={{height:'3px',background:'var(--b2)',borderRadius:'2px',overflow:'hidden'}}>
+    <div style={{height:'100%',width:`${Math.min(100,pct)}%`,background:color,borderRadius:'2px',transition:'width .4s ease'}}/>
+  </div>;
+}
+
+function IconCheck(){return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7L5.5 10L11.5 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>;}
+function IconX(){return <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 2L10 10M10 2L2 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>;}
+function IconChevron({dir='down'}){
+  const r={down:0,up:180,right:-90,left:90}[dir];
+  return <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{transform:`rotate(${r}deg)`,transition:'transform .2s'}}><path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>;
+}
+function IconBook(){return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 3h4v10H3zM9 3h4v10H9z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><path d="M7 3v10" stroke="currentColor" strokeWidth="1.2"/></svg>;}
+function IconHome(){return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 7L8 2l6 5v7H2V7z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M6 14v-4h4v4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;}
+function IconBolt(){return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M9.5 2L4 9h5l-2.5 5L13 7H8l1.5-5z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>;}
+function IconGrid(){return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.2"/></svg>;}
+function IconChart(){return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 12L6 7l3 3 5-6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>;}
+function IconSearch(){return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4" stroke="currentColor" strokeWidth="1.2"/><path d="M10 10l2 2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;}
+function IconArrow({dir='left'}){
+  return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{transform:dir==='right'?'scaleX(-1)':''}}><path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>;
+}
+function IconAdd(){return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>;}
+
+// ─── NAV BAR ──────────────────────────────────────────────────────────────────
+function NavBar({view,dispatch}){
+  const items=[
+    {v:'dash',icon:<IconHome/>,label:'Base'},
+    {v:'workout',icon:<IconBolt/>,label:'Mission'},
+    {v:'programs',icon:<IconGrid/>,label:'Programs'},
+    {v:'library',icon:<IconBook/>,label:'Library'},
+    {v:'progress',icon:<IconChart/>,label:'Progress'},
+  ];
+  return (
+    <nav style={{
+      position:'fixed',bottom:0,left:0,right:0,
+      background:'var(--surf)',borderTop:'1px solid var(--b2)',
+      display:'flex',justifyContent:'space-around',alignItems:'center',
+      padding:'8px 0 max(8px,env(safe-area-inset-bottom))',
+      zIndex:100,backdropFilter:'blur(12px)',
+    }}>
+      {items.map(item=>{
+        const active=view===item.v||(view==='workout'&&item.v==='workout')||(view==='exdetail'&&item.v==='library');
+        return (
+          <button key={item.v}
+            onClick={()=>dispatch({t:'NAV',v:item.v})}
+            style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'3px',
+              padding:'4px 16px',borderRadius:'8px',
+              color:active?'var(--acc)':'var(--td)',
+              transition:'color .15s',}}>
+            {item.icon}
+            <span style={{...S.label,fontSize:'9px',color:'inherit'}}>{item.label}</span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
+// ─── DASHBOARD ────────────────────────────────────────────────────────────────
+function DashView({state,dispatch}){
+  const p=PROGRAMS[state.prog];
+  const{done,total}=getWeekProgress(state.logs,state.prog,state.week);
+  const streak=getStreak(state.logs,state.prog,state.week);
+  const phase=getPhase(state.week);
+  const [bwInput,setBwInput]=useState('');
+  const latestBw=state.bwLog[state.bwLog.length-1];
+
+  return (
+    <div className="fi" style={{padding:'20px 16px',paddingBottom:'80px',maxWidth:'480px',margin:'0 auto'}}>
+      {/* Header */}
+      <div style={{marginBottom:'24px'}}>
+        <div style={{...S.row,justifyContent:'space-between',marginBottom:'4px'}}>
+          <span style={{...S.label,color:'var(--td)'}}>Mission Dashboard</span>
+          <Badge text={p.short} color={CHAR[p.days[0]?.char||'bruce'].color} small/>
+        </div>
+        <h1 style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'28px',fontWeight:800,
+          letterSpacing:'-.02em',lineHeight:1}}>
+          WEEK {state.week}
+        </h1>
+        <div style={{...S.row,marginTop:'6px',gap:'6px'}}>
+          <span style={{fontSize:'12px',color:phase.color,fontFamily:"'Barlow Condensed',sans-serif",
+            fontWeight:700,letterSpacing:'.05em'}}>{phase.phase.toUpperCase()}</span>
+          <span style={{fontSize:'12px',color:'var(--td)'}}>phase</span>
+        </div>
+      </div>
+
+      {/* Phase tip */}
+      <div style={{...S.card2,padding:'12px 14px',marginBottom:'16px',
+        borderLeft:`3px solid ${phase.color}`,borderRadius:'0 8px 8px 0',borderLeftWidth:'3px'}}>
+        <p style={{fontSize:'12px',color:'var(--td)',lineHeight:1.5}}>{phase.tip}</p>
+      </div>
+
+      {/* Stats row */}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'10px',marginBottom:'20px'}}>
+        {[
+          {label:'Done',val:`${done}/${total}`,color:'var(--ok)'},
+          {label:'Streak',val:`${streak}wk`,color:'var(--acc)'},
+          {label:'Weight',val:latestBw?`${latestBw.w}${state.units}`:'—',color:'var(--warn)'},
+        ].map(s=>(
+          <div key={s.label} style={{...S.card,padding:'12px',textAlign:'center'}}>
+            <div style={{...S.label,fontSize:'9px',marginBottom:'6px'}}>{s.label}</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'22px',fontWeight:800,color:s.color}}>{s.val}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Week progress bar */}
+      <div style={{...S.card,padding:'14px',marginBottom:'20px'}}>
+        <div style={{...S.row,justifyContent:'space-between',marginBottom:'10px'}}>
+          <span style={S.label}>Weekly Progress</span>
+          <span style={{...S.label,color:'var(--ok)'}}>{Math.round(done/total*100)}%</span>
+        </div>
+        <ProgressBar pct={done/total*100} color="var(--ok)"/>
+        <div style={{display:'flex',gap:'6px',marginTop:'12px',flexWrap:'wrap'}}>
+          {p.days.map(day=>{
+            const done2=isDayDone(state.logs,state.week,day.id);
+            const ch=CHAR[day.char];
+            return (
+              <button key={day.id}
+                onClick={()=>dispatch({t:'DAY',id:day.id})}
+                style={{flex:'1',minWidth:'60px',padding:'8px 6px',borderRadius:'6px',textAlign:'center',
+                  background:done2?`${ch.color}18`:'var(--surf2)',
+                  border:`1px solid ${done2?ch.color+'44':'var(--b2)'}`,
+                  transition:'all .2s',cursor:'pointer'}}>
+                <div style={{...S.label,fontSize:'9px',color:done2?ch.color:'var(--tm)',marginBottom:'3px'}}>D{day.num}</div>
+                <div style={{fontSize:'10px',color:done2?ch.color:'var(--td)',fontFamily:"'Barlow Condensed',sans-serif",fontWeight:600}}>
+                  {done2?'✓':ch.label.slice(0,4)}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Today's workout */}
+      <div style={{marginBottom:'20px'}}>
+        <div style={{...S.label,marginBottom:'10px'}}>Today's Mission</div>
+        {p.days.map((day,i)=>{
+          if(i>1)return null; // show first 2 undone
+          const done2=isDayDone(state.logs,state.week,day.id);
+          const ch=CHAR[day.char];
+          return (
+            <button key={day.id} onClick={()=>dispatch({t:'DAY',id:day.id})}
+              style={{...S.card,width:'100%',marginBottom:'8px',padding:'14px',textAlign:'left',
+                borderLeft:`3px solid ${done2?ch.color+'66':ch.color}`,
+                background:done2?'var(--surf)':'var(--surf)',opacity:done2?.7:1,
+                transition:'all .2s',cursor:'pointer'}}>
+              <div style={{...S.row,justifyContent:'space-between',marginBottom:'6px'}}>
+                <Badge text={ch.label} color={ch.color} small/>
+                <span style={{...S.label,fontSize:'9px'}}>{day.label}</span>
+              </div>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'18px',fontWeight:700,
+                color:done2?'var(--td)':'var(--txt)',letterSpacing:'-.01em'}}>
+                {day.name}
+              </div>
+              <div style={{fontSize:'11px',color:'var(--td)',marginTop:'4px'}}>
+                {day.blocks.reduce((a,b)=>a+b.ex.length,0)} exercises · {day.blocks.length} blocks
+                {done2&&<span style={{color:'var(--ok)',marginLeft:'8px'}}>✓ Complete</span>}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Bodyweight logger */}
+      <div style={{...S.card,padding:'14px'}}>
+        <div style={{...S.label,marginBottom:'10px'}}>Log Bodyweight</div>
+        <div style={{...S.row}}>
+          <input
+            type="number" placeholder={`Weight (${state.units})`}
+            value={bwInput} onChange={e=>setBwInput(e.target.value)}
+            style={{flex:1,padding:'8px 10px',fontSize:'14px'}}
+          />
+          <button
+            onClick={()=>{if(bwInput){dispatch({t:'LOG_BW',w:bwInput});setBwInput('');}}}
+            style={{padding:'8px 16px',background:'var(--acc-d)',border:'1px solid var(--acc)',
+              borderRadius:'6px',color:'var(--acc)',fontFamily:"'Barlow Condensed',sans-serif",
+              fontWeight:700,fontSize:'13px',letterSpacing:'.04em',whiteSpace:'nowrap'}}>
+            LOG
+          </button>
+        </div>
+        {state.bwLog.length>0&&(
+          <div style={{marginTop:'10px',display:'flex',gap:'6px',flexWrap:'wrap'}}>
+            {state.bwLog.slice(-5).map((e,i)=>(
+              <div key={i} style={{fontSize:'11px',padding:'3px 8px',background:'var(--surf3)',
+                borderRadius:'4px',color:'var(--td)',fontFamily:"'JetBrains Mono',monospace"}}>
+                {e.w}{state.units}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Week navigation */}
+      <div style={{...S.row,justifyContent:'space-between',marginTop:'20px',padding:'12px',
+        background:'var(--surf)',border:'1px solid var(--b1)',borderRadius:'8px'}}>
+        <button onClick={()=>dispatch({t:'WEEK',w:state.week-1})}
+          style={{...S.row,gap:'4px',color:'var(--td)',padding:'4px 10px',borderRadius:'5px',
+            background:'var(--surf2)',border:'1px solid var(--b1)'}}>
+          <IconArrow dir="left"/><span style={{...S.label}}>Prev</span>
+        </button>
+        <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'16px',fontWeight:700}}>
+          Week {state.week}
+        </span>
+        <button onClick={()=>dispatch({t:'WEEK',w:state.week+1})}
+          style={{...S.row,gap:'4px',color:'var(--td)',padding:'4px 10px',borderRadius:'5px',
+            background:'var(--surf2)',border:'1px solid var(--b1)'}}>
+          <span style={{...S.label}}>Next</span><IconArrow dir="right"/>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── SET ROW ──────────────────────────────────────────────────────────────────
+function SetRow({setNum,log,dayId,bi,ei,si,dispatch,showWeight}){
+  const sl=log?.sets?.[si]||{reps:'',weight:'',done:false};
+  return (
+    <div style={{display:'grid',gridTemplateColumns:showWeight?'32px 1fr 1fr 36px':'32px 1fr 36px',
+      gap:'6px',alignItems:'center',padding:'5px 0',
+      borderTop:si>0?'1px solid var(--b1)':'none'}}>
+      <div style={{...S.label,fontSize:'10px',textAlign:'center',color:'var(--tm)'}}>{setNum}</div>
+      {showWeight&&(
+        <input type="text" placeholder="—" value={sl.weight}
+          onChange={e=>dispatch({t:'SET_LOG',dayId,bi,ei,si,field:'weight',val:e.target.value})}
+          style={{padding:'5px 4px',fontSize:'12px'}}
+        />
+      )}
+      <input type="text" placeholder="—" value={sl.reps}
+        onChange={e=>dispatch({t:'SET_LOG',dayId,bi,ei,si,field:'reps',val:e.target.value})}
+        style={{padding:'5px 4px',fontSize:'12px'}}
+      />
+      <button onClick={()=>dispatch({t:'TOGGLE_SET',dayId,bi,ei,si})}
+        style={{width:'34px',height:'34px',borderRadius:'6px',display:'flex',
+          alignItems:'center',justifyContent:'center',flexShrink:0,
+          background:sl.done?'var(--ok-d)':'var(--surf3)',
+          border:`1px solid ${sl.done?'var(--ok)':'var(--b2)'}`,
+          color:sl.done?'var(--ok)':'var(--td)',transition:'all .15s'}}>
+        {sl.done?<IconCheck/>:<span style={{width:'8px',height:'8px',borderRadius:'50%',background:'var(--b3)',display:'block'}}/>}
+      </button>
+    </div>
+  );
+}
+
+// ─── EXERCISE CARD ────────────────────────────────────────────────────────────
+function ExCard({ex,dayId,bi,ei,log,state,dispatch,showWeight}){
+  const exData=EX[ex.id];
+  const expanded=state.expandEx[`${dayId}-${bi}-${ei}`];
+  const setCount=typeof ex.sets==='number'?ex.sets:parseInt(ex.sets)||1;
+  const completedSets=log?.sets?.filter(s=>s.done).length||0;
+  const allDone=ex.sets&&completedSets>=setCount;
+  const cat=exData?.cat||'strength';
+  const cc=catColor(cat);
+
+  return (
+    <div style={{...S.card2,marginBottom:'6px',overflow:'hidden',
+      borderLeft:`2px solid ${allDone?'var(--ok)':cc}66`,
+      transition:'border-color .2s'}}>
+      {/* Header row */}
+      <div style={{display:'flex',alignItems:'flex-start',gap:'10px',padding:'10px 12px',cursor:'pointer'}}
+        onClick={()=>dispatch({t:'TOGGLE_EX',d:dayId,bi,ei})}>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{...S.row,gap:'6px',marginBottom:'3px',flexWrap:'wrap'}}>
+            <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'15px',fontWeight:700,
+              color:allDone?'var(--td)':'var(--txt)',letterSpacing:'-.01em'}}>
+              {exData?.name||ex.id}
+            </span>
+            {allDone&&<span style={{color:'var(--ok)',fontSize:'12px'}}>✓</span>}
+          </div>
+          <div style={{...S.row,gap:'8px',flexWrap:'wrap'}}>
+            {ex.sets&&<span style={{...S.num,fontSize:'11px',color:cc}}>
+              {ex.sets}×{ex.reps}
+            </span>}
+            {!ex.sets&&<span style={{fontSize:'11px',color:'var(--td)'}}>{ex.reps}</span>}
+            {ex.rest&&<span style={{fontSize:'11px',color:'var(--tm)'}}>{ex.rest} rest</span>}
+            {completedSets>0&&ex.sets&&<span style={{fontSize:'11px',color:'var(--ok)'}}>{completedSets}/{setCount} sets</span>}
+          </div>
+        </div>
+        <div style={{...S.row,gap:'8px',flexShrink:0}}>
+          <button onClick={e=>{e.stopPropagation();dispatch({t:'EX_DETAIL',id:ex.id});}}
+            style={{padding:'4px 8px',borderRadius:'4px',background:'var(--surf3)',
+              border:'1px solid var(--b2)',fontSize:'10px',color:'var(--td)',
+              fontFamily:"'Barlow Condensed',sans-serif",fontWeight:600,letterSpacing:'.04em'}}>
+            INFO
+          </button>
+          <div style={{color:'var(--tm)',paddingTop:'2px'}}>
+            <IconChevron dir={expanded?'up':'down'}/>
+          </div>
+        </div>
+      </div>
+
+      {/* Expanded content */}
+      {expanded&&(
+        <div style={{padding:'0 12px 12px',animation:'fi .2s ease'}}>
+          {ex.note&&<div style={{fontSize:'11px',color:'var(--td)',marginBottom:'10px',
+            padding:'6px 8px',background:'var(--surf3)',borderRadius:'5px',
+            borderLeft:'2px solid var(--b3)'}}>
+            {ex.note}
+          </div>}
+
+          {ex.sets&&(
+            <div>
+              {/* Table header */}
+              <div style={{display:'grid',
+                gridTemplateColumns:showWeight?'32px 1fr 1fr 36px':'32px 1fr 36px',
+                gap:'6px',marginBottom:'4px'}}>
+                <div style={{...S.label,fontSize:'9px',textAlign:'center'}}>SET</div>
+                {showWeight&&<div style={{...S.label,fontSize:'9px',textAlign:'center'}}>{state.units.toUpperCase()}</div>}
+                <div style={{...S.label,fontSize:'9px',textAlign:'center'}}>REPS</div>
+                <div style={{...S.label,fontSize:'9px',textAlign:'center'}}>✓</div>
+              </div>
+              {Array.from({length:setCount}).map((_,si)=>(
+                <SetRow key={si} setNum={si+1} log={log} dayId={dayId}
+                  bi={bi} ei={ei} si={si} dispatch={dispatch} showWeight={showWeight}/>
+              ))}
+            </div>
+          )}
+
+          {/* Notes */}
+          <div style={{marginTop:'10px'}}>
+            <div style={{...S.label,fontSize:'9px',marginBottom:'4px'}}>Notes</div>
+            <textarea rows={2} placeholder="Log notes, cues, how it felt..."
+              value={log?.notes||''}
+              onChange={e=>dispatch({t:'LOG_NOTES',dayId,bi,ei,notes:e.target.value})}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── WORKOUT VIEW ─────────────────────────────────────────────────────────────
+function WorkoutView({state,dispatch}){
+  const p=PROGRAMS[state.prog];
+  const day=p.days.find(d=>d.id===state.dayId)||p.days[0];
+  const ch=CHAR[day.char];
+  const isDone=isDayDone(state.logs,state.week,day.id);
+  const phase=getPhase(state.week);
+  const strengthCats=['strength','power'];
+  
+  const handlePrev=()=>{
+    const idx=p.days.findIndex(d=>d.id===day.id);
+    if(idx>0)dispatch({t:'DAY',id:p.days[idx-1].id});
+  };
+  const handleNext=()=>{
+    const idx=p.days.findIndex(d=>d.id===day.id);
+    if(idx<p.days.length-1)dispatch({t:'DAY',id:p.days[idx+1].id});
+  };
+
+  return (
+    <div style={{paddingBottom:'80px',maxWidth:'480px',margin:'0 auto'}}>
+      {/* Workout header */}
+      <div style={{padding:'16px 16px 0',background:'var(--surf)',borderBottom:'1px solid var(--b1)',
+        marginBottom:'0'}}>
+        <div style={{...S.row,justifyContent:'space-between',marginBottom:'10px'}}>
+          <div style={{...S.row,gap:'6px'}}>
+            <Badge text={ch.label} color={ch.color}/>
+            <Badge text={`W${state.week}`} color={phase.color} small/>
+          </div>
+          <span style={{...S.label,fontSize:'9px'}}>{day.label}</span>
+        </div>
+        <h2 style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'22px',fontWeight:800,
+          lineHeight:1.1,marginBottom:'8px',letterSpacing:'-.01em'}}>
+          {day.name}
+        </h2>
+        <div style={{...S.row,justifyContent:'space-between',paddingBottom:'12px'}}>
+          <div style={{...S.row,gap:'12px'}}>
+            <span style={{fontSize:'11px',color:'var(--td)'}}>
+              {day.blocks.reduce((a,b)=>a+b.ex.length,0)} exercises
+            </span>
+            <span style={{fontSize:'11px',color:'var(--td)'}}>
+              {day.blocks.length} blocks
+            </span>
+          </div>
+          {isDone&&<span style={{fontSize:'11px',color:'var(--ok)',fontWeight:600}}>✓ COMPLETE</span>}
+        </div>
+
+        {/* Day navigation */}
+        <div style={{...S.row,justifyContent:'space-between',paddingTop:'8px',paddingBottom:'12px',
+          borderTop:'1px solid var(--b1)'}}>
+          <button onClick={handlePrev}
+            style={{...S.row,gap:'4px',color:'var(--td)',fontSize:'11px',
+              fontFamily:"'Barlow Condensed',sans-serif",fontWeight:600,letterSpacing:'.04em',
+              padding:'4px 0',opacity:p.days.findIndex(d=>d.id===day.id)===0?.3:1}}>
+            <IconArrow dir="left"/> PREV DAY
+          </button>
+          <div style={{display:'flex',gap:'5px'}}>
+            {p.days.map(d=>(
+              <button key={d.id} onClick={()=>dispatch({t:'DAY',id:d.id})}
+                style={{width:'22px',height:'6px',borderRadius:'3px',
+                  background:d.id===day.id?ch.color:isDayDone(state.logs,state.week,d.id)?'var(--ok)44':'var(--b2)',
+                  transition:'background .2s',border:'none',cursor:'pointer'}}/>
+            ))}
+          </div>
+          <button onClick={handleNext}
+            style={{...S.row,gap:'4px',color:'var(--td)',fontSize:'11px',
+              fontFamily:"'Barlow Condensed',sans-serif",fontWeight:600,letterSpacing:'.04em',
+              padding:'4px 0',opacity:p.days.findIndex(d=>d.id===day.id)===p.days.length-1?.3:1}}>
+            NEXT DAY <IconArrow dir="right"/>
+          </button>
+        </div>
+      </div>
+
+      {/* Progression tip */}
+      <div style={{margin:'12px 16px',padding:'10px 12px',background:`${phase.color}15`,
+        border:`1px solid ${phase.color}33`,borderRadius:'6px'}}>
+        <div style={{...S.label,fontSize:'9px',color:phase.color,marginBottom:'3px'}}>{phase.phase}</div>
+        <p style={{fontSize:'11px',color:'var(--td)',lineHeight:1.4}}>{phase.tip}</p>
+      </div>
+
+      {/* Global warmup */}
+      {day.warmup&&(
+        <div style={{margin:'0 16px 12px'}}>
+          <button onClick={()=>dispatch({t:'TOGGLE_WARMUP'})}
+            style={{...S.card,width:'100%',padding:'12px 14px',textAlign:'left',cursor:'pointer'}}>
+            <div style={{...S.row,justifyContent:'space-between'}}>
+              <div>
+                <div style={{...S.label,fontSize:'9px',color:'var(--td)',marginBottom:'3px'}}>Pre-Session</div>
+                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'15px',fontWeight:700}}>
+                  Global Warm-Up Protocol
+                </span>
+              </div>
+              <IconChevron dir={state.showWarmup?'up':'down'}/>
+            </div>
+          </button>
+          {state.showWarmup&&(
+            <div style={{...S.card,marginTop:'2px',padding:'12px 14px',animation:'fi .2s ease'}}>
+              {WARMUP_EX.map((w,i)=>(
+                <div key={i} style={{...S.row,gap:'10px',padding:'6px 0',
+                  borderTop:i>0?'1px solid var(--b1)':'none'}}>
+                  <div style={{minWidth:'28px',height:'28px',borderRadius:'6px',
+                    background:'var(--surf3)',display:'flex',alignItems:'center',justifyContent:'center',
+                    fontFamily:"'JetBrains Mono',monospace",fontSize:'10px',color:'var(--td)',flexShrink:0}}>
+                    {i+1}
+                  </div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:'13px',fontWeight:500}}>{EX[w.exId]?.name||w.exId}</div>
+                    <div style={{fontSize:'11px',color:'var(--td)'}}>{w.reps}{w.note&&` · ${w.note}`}</div>
+                  </div>
+                </div>
+              ))}
+              <div style={{marginTop:'10px',padding:'8px',background:'var(--surf3)',borderRadius:'5px'}}>
+                <p style={{fontSize:'11px',color:'var(--td)'}}>
+                  Then 1–3 ramp-up sets at 40–60–80% before first main lift.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Exercise blocks */}
+      <div style={{padding:'0 16px'}}>
+        {day.blocks.map((block,bi)=>{
+          const blockColor=BLOCK_COLORS[block.type]||'#5a5a6a';
+          const showW=strengthCats.includes(block.type)||block.ex.some(e=>EX[e.id]?.cat==='strength');
+          return (
+            <div key={bi} style={{marginBottom:'16px'}}>
+              <div style={{...S.row,gap:'8px',marginBottom:'8px'}}>
+                <div style={{height:'14px',width:'3px',borderRadius:'2px',background:blockColor,flexShrink:0}}/>
+                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'13px',fontWeight:700,
+                  letterSpacing:'.06em',textTransform:'uppercase',color:blockColor}}>
+                  {block.name}
+                </span>
+              </div>
+              {block.ex.map((ex,ei)=>{
+                const log=getLog(state.logs,state.week,day.id,bi,ei);
+                return <ExCard key={ei} ex={ex} dayId={day.id} bi={bi} ei={ei}
+                  log={log} state={state} dispatch={dispatch} showWeight={showW}/>;
+              })}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Complete button */}
+      <div style={{padding:'8px 16px 16px'}}>
+        <button
+          onClick={()=>dispatch({t:'COMPLETE_DAY',id:day.id})}
+          style={{width:'100%',padding:'14px',borderRadius:'8px',
+            background:isDone?'var(--surf2)':'var(--ok-d)',
+            border:`1px solid ${isDone?'var(--b2)':'var(--ok)'}`,
+            color:isDone?'var(--td)':'var(--ok)',
+            fontFamily:"'Barlow Condensed',sans-serif",fontSize:'16px',fontWeight:800,
+            letterSpacing:'.08em',textTransform:'uppercase',transition:'all .2s'}}>
+          {isDone?'✓ MISSION COMPLETE — TAP TO UNDO':'MARK MISSION COMPLETE'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── PROGRAMS VIEW ────────────────────────────────────────────────────────────
+function ProgramsView({state,dispatch}){
+  return (
+    <div className="fi" style={{padding:'20px 16px',paddingBottom:'80px',maxWidth:'480px',margin:'0 auto'}}>
+      <div style={{...S.label,marginBottom:'20px'}}>Select Program</div>
+
+      {Object.values(PROGRAMS).map(p=>{
+        const active=state.prog===p.id;
+        const firstCh=CHAR[p.days[0].char];
+        return (
+          <div key={p.id} style={{...S.card,marginBottom:'12px',
+            borderColor:active?firstCh.color+'66':'var(--b1)',
+            borderWidth:active?'1px':'1px'}}>
+            <div style={{borderLeft:`3px solid ${active?firstCh.color:'var(--b2)'}`,padding:'16px'}}>
+              <div style={{...S.row,justifyContent:'space-between',marginBottom:'8px'}}>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'20px',fontWeight:800}}>
+                  {p.name}
+                </div>
+                {active&&<Badge text="ACTIVE" color={firstCh.color} small/>}
+              </div>
+              <p style={{fontSize:'12px',color:'var(--td)',marginBottom:'14px',lineHeight:1.5}}>{p.desc}</p>
+
+              {/* Day grid */}
+              <div style={{display:'flex',gap:'6px',flexWrap:'wrap',marginBottom:'14px'}}>
+                {p.days.map(day=>{
+                  const ch=CHAR[day.char];
+                  return (
+                    <div key={day.id} style={{padding:'5px 10px',borderRadius:'4px',
+                      background:ch.dim,border:`1px solid ${ch.color}44`}}>
+                      <div style={{...S.label,fontSize:'9px',color:ch.color}}>D{day.num}</div>
+                      <div style={{fontSize:'11px',color:'var(--td)',marginTop:'1px',
+                        fontFamily:"'Barlow Condensed',sans-serif",fontWeight:600}}>
+                        {ch.label}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={()=>dispatch({t:'PROG',p:p.id})}
+                style={{width:'100%',padding:'10px',borderRadius:'6px',
+                  background:active?'var(--surf2)':firstCh.dim,
+                  border:`1px solid ${active?'var(--b2)':firstCh.color+'44'}`,
+                  color:active?'var(--td)':firstCh.color,
+                  fontFamily:"'Barlow Condensed',sans-serif",fontSize:'13px',fontWeight:800,
+                  letterSpacing:'.06em',textTransform:'uppercase'}}>
+                {active?'CURRENTLY ACTIVE':'SWITCH TO THIS PROGRAM'}
+              </button>
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Progression guide */}
+      <div style={{...S.card,padding:'16px',marginTop:'8px'}}>
+        <div style={{...S.label,marginBottom:'12px'}}>5-Week Progression Cycle</div>
+        {PROGRESSION.map((p,i)=>(
+          <div key={i} style={{...S.row,gap:'10px',padding:'8px 0',
+            borderTop:i>0?'1px solid var(--b1)':'none'}}>
+            <div style={{width:'24px',height:'24px',borderRadius:'5px',background:`${p.color}22`,
+              border:`1px solid ${p.color}44`,display:'flex',alignItems:'center',justifyContent:'center',
+              fontFamily:"'JetBrains Mono',monospace",fontSize:'11px',color:p.color,flexShrink:0}}>
+              {i+1}
+            </div>
+            <div style={{flex:1}}>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'13px',fontWeight:700,
+                color:p.color,marginBottom:'2px'}}>{p.phase}</div>
+              <div style={{fontSize:'11px',color:'var(--td)',lineHeight:1.4}}>{p.tip}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── LIBRARY VIEW ─────────────────────────────────────────────────────────────
+function LibraryView({state,dispatch}){
+  const cats=['strength','conditioning','power','core','mobility','movement','durability','warmup'];
+  const [filter,setFilter]=useState('');
+  const q=state.exSearch.toLowerCase();
+  const entries=Object.entries(EX);
+  const filtered=entries.filter(([id,ex])=>{
+    if(filter&&ex.cat!==filter)return false;
+    if(q&&!ex.name.toLowerCase().includes(q)&&!ex.cat.includes(q))return false;
+    return true;
+  });
+
+  return (
+    <div className="fi" style={{padding:'20px 16px',paddingBottom:'80px',maxWidth:'480px',margin:'0 auto'}}>
+      <div style={{...S.label,marginBottom:'16px'}}>Exercise Library</div>
+
+      {/* Search */}
+      <div style={{position:'relative',marginBottom:'12px'}}>
+        <div style={{position:'absolute',left:'10px',top:'50%',transform:'translateY(-50%)',
+          color:'var(--tm)',pointerEvents:'none'}}><IconSearch/></div>
+        <input
+          placeholder="Search exercises..."
+          value={state.exSearch}
+          onChange={e=>dispatch({t:'EX_SEARCH',q:e.target.value})}
+          style={{paddingLeft:'32px',paddingRight:'12px',padding:'10px 10px 10px 32px',
+            textAlign:'left',fontSize:'13px'}}
+        />
+      </div>
+
+      {/* Category filter */}
+      <div style={{display:'flex',gap:'6px',flexWrap:'wrap',marginBottom:'16px'}}>
+        <button onClick={()=>setFilter('')}
+          style={{padding:'4px 10px',borderRadius:'4px',fontSize:'11px',
+            fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,letterSpacing:'.04em',
+            textTransform:'uppercase',background:!filter?'var(--acc-d)':'var(--surf2)',
+            border:`1px solid ${!filter?'var(--acc)':'var(--b2)'}`,
+            color:!filter?'var(--acc)':'var(--td)'}}>
+          ALL
+        </button>
+        {cats.map(c=>(
+          <button key={c} onClick={()=>setFilter(filter===c?'':c)}
+            style={{padding:'4px 10px',borderRadius:'4px',fontSize:'11px',
+              fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,letterSpacing:'.04em',
+              textTransform:'uppercase',
+              background:filter===c?`${catColor(c)}22`:'var(--surf2)',
+              border:`1px solid ${filter===c?catColor(c)+'55':'var(--b2)'}`,
+              color:filter===c?catColor(c):'var(--td)'}}>
+            {c}
+          </button>
+        ))}
+      </div>
+
+      {/* Results */}
+      <div style={{fontSize:'11px',color:'var(--td)',marginBottom:'10px'}}>
+        {filtered.length} exercise{filtered.length!==1?'s':''}
+      </div>
+      {filtered.map(([id,ex])=>{
+        const cc=catColor(ex.cat);
+        return (
+          <button key={id}
+            onClick={()=>dispatch({t:'EX_DETAIL',id})}
+            style={{...S.card,width:'100%',marginBottom:'6px',padding:'12px',textAlign:'left',
+              display:'block',cursor:'pointer',borderLeft:`2px solid ${cc}55`,transition:'background .15s'}}>
+            <div style={{...S.row,justifyContent:'space-between',marginBottom:'4px'}}>
+              <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'15px',fontWeight:700}}>
+                {ex.name}
+              </span>
+              <Badge text={ex.cat} color={cc} small/>
+            </div>
+            <div style={{fontSize:'11px',color:'var(--td)'}}>
+              {ex.muscles.join(' · ')}
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── EXERCISE DETAIL VIEW ─────────────────────────────────────────────────────
+function ExDetailView({state,dispatch}){
+  const ex=EX[state.exDetail];
+  if(!ex) return null;
+  const cc=catColor(ex.cat);
+  // find where this ex appears
+  const appearances=[];
+  Object.values(PROGRAMS).forEach(p=>{
+    p.days.forEach(day=>{
+      day.blocks.forEach(bl=>{
+        bl.ex.forEach(e=>{
+          if(e.id===state.exDetail){
+            appearances.push({prog:p.short,day:day.name,sets:e.sets,reps:e.reps});
+          }
+        });
+      });
+    });
+  });
+
+  return (
+    <div className="fi" style={{padding:'20px 16px',paddingBottom:'80px',maxWidth:'480px',margin:'0 auto'}}>
+      <button onClick={()=>dispatch({t:'NAV',v:'library'})}
+        style={{...S.row,gap:'6px',color:'var(--td)',marginBottom:'20px',
+          fontFamily:"'Barlow Condensed',sans-serif",fontSize:'13px',fontWeight:600,letterSpacing:'.04em'}}>
+        <IconArrow dir="left"/> BACK TO LIBRARY
+      </button>
+
+      <div style={{marginBottom:'8px'}}>
+        <Badge text={ex.cat} color={cc}/>
+      </div>
+      <h2 style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'28px',fontWeight:800,
+        letterSpacing:'-.02em',marginBottom:'16px'}}>
+        {ex.name}
+      </h2>
+
+      {/* Muscles */}
+      <div style={{...S.card,padding:'14px',marginBottom:'12px'}}>
+        <div style={{...S.label,marginBottom:'8px'}}>Muscles Targeted</div>
+        <div style={{display:'flex',gap:'6px',flexWrap:'wrap'}}>
+          {ex.muscles.map(m=>(
+            <span key={m} style={{padding:'3px 8px',borderRadius:'3px',
+              background:'var(--surf3)',border:'1px solid var(--b2)',
+              fontSize:'12px',color:'var(--td)'}}>
+              {m}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Instructions */}
+      <div style={{...S.card,padding:'14px',marginBottom:'12px',
+        borderLeft:`3px solid ${cc}`}}>
+        <div style={{...S.label,marginBottom:'8px'}}>Instructions</div>
+        <p style={{fontSize:'13px',color:'var(--txt)',lineHeight:1.65}}>{ex.info}</p>
+      </div>
+
+      {/* Programming context */}
+      {appearances.length>0&&(
+        <div style={{...S.card,padding:'14px'}}>
+          <div style={{...S.label,marginBottom:'10px'}}>Programming Context</div>
+          {appearances.map((a,i)=>(
+            <div key={i} style={{...S.row,gap:'10px',padding:'7px 0',
+              borderTop:i>0?'1px solid var(--b1)':'none'}}>
+              <Badge text={a.prog} color={cc} small/>
+              <div style={{flex:1}}>
+                <div style={{fontSize:'12px',fontWeight:500}}>{a.day}</div>
+                {a.sets&&<div style={{fontSize:'11px',color:'var(--td)',fontFamily:"'JetBrains Mono',monospace"}}>
+                  {a.sets}×{a.reps}
+                </div>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── PROGRESS VIEW ────────────────────────────────────────────────────────────
+function ProgressView({state,dispatch}){
+  const p=PROGRAMS[state.prog];
+  const [tab,setTab]=useState('body');
+
+  // Compute PR board
+  const prs={};
+  Object.entries(state.logs).forEach(([wk,wkLog])=>{
+    Object.entries(wkLog).forEach(([dayId,dayLog])=>{
+      Object.entries(dayLog).forEach(([key,exLog])=>{
+        if(key.startsWith('__')||!exLog.sets)return;
+        const [bi,ei]=key.split('-').map(Number);
+        const day=p.days.find(d=>d.id===dayId);
+        if(!day)return;
+        const blk=day.blocks[bi];
+        if(!blk)return;
+        const exRef=blk.ex[ei];
+        if(!exRef)return;
+        const exId=exRef.id;
+        exLog.sets.forEach(s=>{
+          if(s.done&&s.weight&&!isNaN(parseFloat(s.weight))){
+            const w=parseFloat(s.weight);
+            if(!prs[exId]||w>prs[exId].w){
+              prs[exId]={w,reps:s.reps,week:parseInt(wk.slice(1))};
+            }
+          }
+        });
+      });
+    });
+  });
+
+  // Week-by-week completion
+  const weekData=Array.from({length:Math.min(state.week,8)},(_,i)=>{
+    const w=state.week-i;
+    const{done,total}=getWeekProgress(state.logs,state.prog,w);
+    return{week:w,done,total,pct:total?Math.round(done/total*100):0};
+  }).reverse();
+
+  return (
+    <div className="fi" style={{padding:'20px 16px',paddingBottom:'80px',maxWidth:'480px',margin:'0 auto'}}>
+      <div style={{...S.label,marginBottom:'16px'}}>Performance Dashboard</div>
+
+      {/* Tabs */}
+      <div style={{...S.row,gap:'6px',marginBottom:'20px'}}>
+        {[{id:'body',label:'Bodyweight'},{id:'prs',label:'PRs'},{id:'history',label:'History'}].map(t=>(
+          <button key={t.id} onClick={()=>setTab(t.id)}
+            style={{padding:'6px 12px',borderRadius:'6px',
+              fontFamily:"'Barlow Condensed',sans-serif",fontSize:'13px',fontWeight:700,
+              letterSpacing:'.04em',textTransform:'uppercase',
+              background:tab===t.id?'var(--surf3)':'transparent',
+              border:`1px solid ${tab===t.id?'var(--b2)':'transparent'}`,
+              color:tab===t.id?'var(--txt)':'var(--td)'}}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab==='body'&&(
+        <div>
+          {state.bwLog.length===0?(
+            <div style={{...S.card,padding:'24px',textAlign:'center'}}>
+              <div style={{color:'var(--td)',fontSize:'13px'}}>No bodyweight entries yet.</div>
+              <div style={{color:'var(--tm)',fontSize:'11px',marginTop:'6px'}}>Log from the Dashboard.</div>
+            </div>
+          ):(
+            <>
+              {/* Mini chart */}
+              <div style={{...S.card,padding:'16px',marginBottom:'12px'}}>
+                <div style={{...S.label,marginBottom:'12px'}}>Bodyweight Log</div>
+                <div style={{display:'flex',alignItems:'flex-end',gap:'6px',height:'80px',marginBottom:'8px'}}>
+                  {state.bwLog.slice(-12).map((e,i,arr)=>{
+                    const vals=arr.map(x=>x.w);
+                    const mn=Math.min(...vals),mx=Math.max(...vals);
+                    const range=mx-mn||1;
+                    const pct=(e.w-mn)/range;
+                    const h=Math.max(12,pct*64+12);
+                    const isLast=i===arr.length-1;
+                    return(
+                      <div key={i} style={{flex:1,display:'flex',flexDirection:'column',
+                        alignItems:'center',gap:'3px',justifyContent:'flex-end'}}>
+                        <div style={{width:'100%',borderRadius:'3px 3px 0 0',
+                          background:isLast?'var(--acc)':'var(--surf3)',
+                          border:`1px solid ${isLast?'var(--acc)':'var(--b2)'}`,
+                          height:`${h}px`,transition:'height .4s ease'}}/>
+                        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:'9px',
+                          color:isLast?'var(--acc)':'var(--tm)',textAlign:'center'}}>
+                          {e.w}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{...S.row,justifyContent:'space-between'}}>
+                  <span style={{fontSize:'11px',color:'var(--td)'}}>
+                    Latest: <strong style={{color:'var(--txt)',fontFamily:"'JetBrains Mono',monospace"}}>
+                      {state.bwLog[state.bwLog.length-1]?.w} {state.units}
+                    </strong>
+                  </span>
+                  <span style={{fontSize:'11px',color:'var(--td)'}}>
+                    {state.bwLog.length} entries
+                  </span>
+                </div>
+              </div>
+              {/* Raw log */}
+              <div style={{...S.card,padding:'14px'}}>
+                {state.bwLog.slice().reverse().slice(0,10).map((e,i)=>(
+                  <div key={i} style={{...S.row,justifyContent:'space-between',padding:'7px 0',
+                    borderTop:i>0?'1px solid var(--b1)':'none'}}>
+                    <span style={{fontSize:'12px',color:'var(--td)'}}>{e.date}</span>
+                    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:'13px',fontWeight:500}}>
+                      {e.w} {state.units}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {tab==='prs'&&(
+        <div>
+          {Object.keys(prs).length===0?(
+            <div style={{...S.card,padding:'24px',textAlign:'center'}}>
+              <div style={{color:'var(--td)',fontSize:'13px'}}>No PRs logged yet.</div>
+              <div style={{color:'var(--tm)',fontSize:'11px',marginTop:'6px'}}>Log sets with weight to track PRs.</div>
+            </div>
+          ):(
+            <div style={{...S.card,padding:'14px'}}>
+              <div style={{...S.label,marginBottom:'10px'}}>Personal Records</div>
+              {Object.entries(prs).map(([id,pr],i)=>{
+                const ex=EX[id];
+                const cc=catColor(ex?.cat||'strength');
+                return(
+                  <div key={id} style={{...S.row,justifyContent:'space-between',padding:'9px 0',
+                    borderTop:i>0?'1px solid var(--b1)':'none'}}>
+                    <div>
+                      <div style={{fontSize:'13px',fontWeight:500}}>{ex?.name||id}</div>
+                      <div style={{fontSize:'11px',color:'var(--td)'}}>Week {pr.week}</div>
+                    </div>
+                    <div style={{textAlign:'right'}}>
+                      <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:'16px',
+                        fontWeight:700,color:cc}}>
+                        {pr.w} {state.units}
+                      </div>
+                      {pr.reps&&<div style={{fontSize:'11px',color:'var(--td)'}}>×{pr.reps}</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab==='history'&&(
+        <div>
+          <div style={{...S.card,padding:'14px',marginBottom:'12px'}}>
+            <div style={{...S.label,marginBottom:'10px'}}>Weekly Consistency</div>
+            {weekData.map((w,i)=>(
+              <div key={i} style={{marginBottom:'10px'}}>
+                <div style={{...S.row,justifyContent:'space-between',marginBottom:'5px'}}>
+                  <span style={{...S.label,fontSize:'10px'}}>Week {w.week}</span>
+                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:'11px',
+                    color:w.pct===100?'var(--ok)':w.pct>50?'var(--acc)':'var(--td)'}}>
+                    {w.done}/{w.total}
+                  </span>
+                </div>
+                <ProgressBar pct={w.pct} color={w.pct===100?'var(--ok)':w.pct>50?'var(--acc)':'var(--b3)'}/>
+              </div>
+            ))}
+          </div>
+
+          {/* All logged workouts */}
+          <div style={{...S.card,padding:'14px'}}>
+            <div style={{...S.label,marginBottom:'10px'}}>Mission Log</div>
+            {Object.entries(state.logs).length===0?(
+              <div style={{color:'var(--tm)',fontSize:'12px',padding:'8px 0'}}>No sessions logged yet.</div>
+            ):(
+              Object.entries(state.logs).reverse().map(([wk,wkLog])=>{
+                const completedDays=Object.keys(wkLog).filter(k=>!k.startsWith('__')&&wkLog[k]?.__done);
+                return(
+                  <div key={wk} style={{marginBottom:'12px'}}>
+                    <div style={{...S.label,fontSize:'10px',color:'var(--acc)',marginBottom:'6px'}}>
+                      {wk.toUpperCase()}
+                    </div>
+                    {completedDays.map(dayId=>{
+                      const day=p.days.find(d=>d.id===dayId);
+                      if(!day)return null;
+                      const ch=CHAR[day.char];
+                      return(
+                        <div key={dayId} style={{...S.row,gap:'8px',padding:'6px 8px',
+                          background:'var(--surf2)',borderRadius:'5px',marginBottom:'4px',
+                          borderLeft:`2px solid ${ch.color}`}}>
+                          <div style={{...S.label,fontSize:'9px',color:ch.color}}>✓</div>
+                          <div style={{fontSize:'12px'}}>{day.name}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── APP ──────────────────────────────────────────────────────────────────────
+export default function App(){
+  const [state,dispatch]=useReducer(reducer,init);
+
+  const renderView=()=>{
+    switch(state.view){
+      case'dash':return <DashView state={state} dispatch={dispatch}/>;
+      case'workout':return state.dayId
+        ?<WorkoutView state={state} dispatch={dispatch}/>
+        :<WorkoutPicker state={state} dispatch={dispatch}/>;
+      case'programs':return <ProgramsView state={state} dispatch={dispatch}/>;
+      case'library':return <LibraryView state={state} dispatch={dispatch}/>;
+      case'exdetail':return <ExDetailView state={state} dispatch={dispatch}/>;
+      case'progress':return <ProgressView state={state} dispatch={dispatch}/>;
+      default:return <DashView state={state} dispatch={dispatch}/>;
+    }
+  };
+
+  return (
+    <div style={{minHeight:'100vh',background:'var(--bg)',maxWidth:'540px',margin:'0 auto',
+      position:'relative'}}>
+      {/* Top bar */}
+      <div style={{position:'sticky',top:0,zIndex:50,background:'rgba(7,7,10,.92)',
+        backdropFilter:'blur(12px)',borderBottom:'1px solid var(--b1)',
+        padding:'12px 16px 10px'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'18px',fontWeight:900,
+              letterSpacing:'.02em',lineHeight:1,color:'var(--txt)'}}>
+              BAT-FAMILY<span style={{color:'var(--acc)'}}>·</span>HYBRID
+            </div>
+            <div style={{...S.label,fontSize:'9px',color:'var(--tm)',marginTop:'1px'}}>
+              Mission Log
+            </div>
+          </div>
+          <div style={{...S.row,gap:'8px'}}>
+            <button onClick={()=>dispatch({t:'WEEK',w:state.week-1})}
+              style={{width:'26px',height:'26px',borderRadius:'5px',background:'var(--surf2)',
+                border:'1px solid var(--b2)',display:'flex',alignItems:'center',justifyContent:'center',
+                color:'var(--td)'}}>
+              <IconArrow dir="left"/>
+            </button>
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:'12px',
+              color:'var(--acc)',minWidth:'30px',textAlign:'center'}}>
+              W{state.week}
+            </div>
+            <button onClick={()=>dispatch({t:'WEEK',w:state.week+1})}
+              style={{width:'26px',height:'26px',borderRadius:'5px',background:'var(--surf2)',
+                border:'1px solid var(--b2)',display:'flex',alignItems:'center',justifyContent:'center',
+                color:'var(--td)'}}>
+              <IconArrow dir="right"/>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <main>{renderView()}</main>
+
+      {/* Nav */}
+      <NavBar view={state.view} dispatch={dispatch}/>
+    </div>
+  );
+}
+
+function WorkoutPicker({state,dispatch}){
+  const p=PROGRAMS[state.prog];
+  return(
+    <div className="fi" style={{padding:'20px 16px',paddingBottom:'80px',maxWidth:'480px',margin:'0 auto'}}>
+      <div style={{...S.label,marginBottom:'16px'}}>Select Today's Mission</div>
+      {p.days.map(day=>{
+        const ch=CHAR[day.char];
+        const done=isDayDone(state.logs,state.week,day.id);
+        return(
+          <button key={day.id} onClick={()=>dispatch({t:'DAY',id:day.id})}
+            style={{...S.card,width:'100%',marginBottom:'8px',padding:'14px',textAlign:'left',
+              borderLeft:`3px solid ${done?ch.color+'44':ch.color}`,opacity:done?.7:1,
+              display:'block',cursor:'pointer'}}>
+            <div style={{...S.row,justifyContent:'space-between',marginBottom:'6px'}}>
+              <Badge text={ch.label} color={ch.color} small/>
+              <div style={{...S.row,gap:'8px'}}>
+                {done&&<span style={{fontSize:'11px',color:'var(--ok)'}}>✓</span>}
+                <span style={{...S.label,fontSize:'9px'}}>{day.label}</span>
+              </div>
+            </div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'17px',fontWeight:700}}>
+              {day.name}
+            </div>
+            <div style={{fontSize:'11px',color:'var(--td)',marginTop:'3px'}}>
+              {day.blocks.reduce((a,b)=>a+b.ex.length,0)} exercises
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
