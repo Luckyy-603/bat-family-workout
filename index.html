@@ -417,7 +417,107 @@ const P6={
   ],
 };
 
-const PROGRAMS={'5day':P5,'6day':P6};
+const PPL={
+  id:'ppl',name:'Wayne Aesthetic · Push/Pull/Legs',short:'PPL',
+  desc:'Five training days on the classic Push/Pull/Legs method, engineered to build the lean, dense Bruce Wayne physique with a conditioning engine to back it. Heavy strength up front, athletic hypertrophy and a dedicated endurance day to keep you carved and capable. Two full rest days.',
+  days:[
+    {id:'ppl1',num:1,name:'Push · Chest / Shoulders / Triceps',char:'bruce',theme:'Strength',warmup:true,blocks:[
+      {name:'Main Lifts',type:'main',ex:[
+        {id:'bench-press',sets:5,reps:'5',rest:'3 min',note:'Set arch and leg drive every set. Add load weekly.'},
+        {id:'overhead-press',sets:4,reps:'6',rest:'2–3 min',note:'Strict press. Brace abs and glutes. No leg drive.'},
+      ]},
+      {name:'Hypertrophy',type:'accessory',ex:[
+        {id:'incline-db-press',sets:4,reps:'8–10',rest:'90 sec',note:'Upper chest. Control the descent.'},
+        {id:'weighted-dips',sets:4,reps:'8',rest:'90 sec',note:'Full depth. Belt or dumbbell when 10 bodyweight is easy.'},
+        {id:'face-pull',sets:4,reps:'15',rest:'60 sec',note:'Rear delt and cuff health. Non-negotiable on push days.'},
+      ]},
+      {name:'Core',type:'core',ex:[
+        {id:'hanging-leg-raise',sets:4,reps:'12',rest:'60 sec',note:'No swing. Legs straight if possible.'},
+      ]},
+      {name:'Conditioning Finisher',type:'conditioning',ex:[
+        {id:'battle-rope',sets:6,reps:'30 sec',rest:'45–60 sec',note:'Battle ropes or shadowboxing. Maximum output each round.'},
+      ]},
+    ]},
+    {id:'ppl2',num:2,name:'Pull · Back / Biceps / Rear Delts',char:'bruce',theme:'Strength',warmup:true,blocks:[
+      {name:'Main Lifts',type:'main',ex:[
+        {id:'weighted-pullups',sets:5,reps:'5',rest:'3 min',note:'Belt loaded. Full dead hang between reps.'},
+        {id:'pendlay-row',sets:4,reps:'6',rest:'2–3 min',note:'Reset to floor each rep. Explosive pull.'},
+      ]},
+      {name:'Hypertrophy',type:'accessory',ex:[
+        {id:'chin-ups',sets:3,reps:'8',rest:'90 sec',note:'Supinated grip. Slow 3-second eccentric.'},
+        {id:'ring-row',sets:3,reps:'12',rest:'60 sec',note:'Or TRX rows. Squeeze the scapulae.'},
+        {id:'shrug-carry',sets:4,reps:'30–40m',rest:'90 sec',note:'Traps and grip. Always heavy.'},
+      ]},
+      {name:'Core',type:'core',ex:[
+        {id:'ab-wheel',sets:4,reps:'10',rest:'60 sec',note:'Knees if needed. Hollow body throughout.'},
+      ]},
+      {name:'Conditioning Finisher',type:'conditioning',ex:[
+        {id:'farmer-carry',sets:5,reps:'40m',rest:'75 sec',note:'Heavy. Tall posture, packed shoulders. Build the engine.'},
+      ]},
+    ]},
+    {id:'ppl3',num:3,name:'Legs · Squat / Hinge / Power',char:'bruce',theme:'Strength',warmup:true,blocks:[
+      {name:'Main Lifts',type:'main',ex:[
+        {id:'back-squat',sets:5,reps:'5',rest:'3–4 min',note:'Primary lower lift. Below parallel. Add load weekly.'},
+        {id:'romanian-deadlift',sets:4,reps:'6',rest:'2 min',note:'Hamstring stretch at bottom. Do not round.'},
+      ]},
+      {name:'Power',type:'power',ex:[
+        {id:'box-jump',sets:5,reps:'3',rest:'2 min',note:'Stick every landing. Step down to protect joints.'},
+      ]},
+      {name:'Hypertrophy',type:'accessory',ex:[
+        {id:'bulgarian-split-squat',sets:3,reps:'8 each',rest:'90 sec',note:'Each leg. These will humble you. Embrace it.'},
+        {id:'walking-lunge',sets:3,reps:'20 steps',rest:'90 sec',note:'Add dumbbells to load.'},
+      ]},
+      {name:'Core',type:'core',ex:[
+        {id:'side-plank',sets:3,reps:'30–45 sec each',rest:'45 sec',note:'Each side. Drive the hip up.'},
+      ]},
+      {name:'Finish',type:'mobility',ex:[
+        {id:'hip-opener',sets:1,reps:'10 min',rest:null,note:'Hips, ankles, T-spine. Non-negotiable after squats.'},
+      ]},
+    ]},
+    {id:'ppl4',num:4,name:'Athletic Push/Pull · Hypertrophy + Movement',char:'nightwing',theme:'Movement',warmup:true,blocks:[
+      {name:'Movement',type:'power',ex:[
+        {id:'broad-jump',sets:4,reps:'3',rest:'90 sec',note:'Max horizontal distance. Stick the landing.'},
+        {id:'agility-ladder',sets:1,reps:'10 min',rest:null,note:'2-in-2-out, lateral shuffles, quick feet.'},
+      ]},
+      {name:'Upper Athletic Hypertrophy',type:'accessory',ex:[
+        {id:'incline-bench',sets:4,reps:'8',rest:'90 sec',note:'Upper chest. Shoulder-safe angle.'},
+        {id:'neutral-grip-pullups',sets:4,reps:'8',rest:'90 sec',note:'Joint-friendly. Full range, controlled.'},
+        {id:'db-press',sets:3,reps:'10 each',rest:'60 sec',note:'Single arm. Brace core each rep.'},
+        {id:'dips',sets:3,reps:'12',rest:'60 sec',note:'Slight forward lean for chest emphasis.'},
+        {id:'kb-swing',sets:4,reps:'15',rest:'60 sec',note:'Hip drive. The bell floats.'},
+      ]},
+      {name:'Core',type:'core',ex:[
+        {id:'hollow-body',sets:3,reps:'30 sec',rest:'45 sec',note:'Lower back pressed to floor always.'},
+        {id:'russian-twist',sets:3,reps:'20 total',rest:'45 sec',note:'Feet off floor. Add weight.'},
+      ]},
+      {name:'Conditioning Finisher',type:'conditioning',ex:[
+        {id:'shuttle-run',sets:6,reps:'5-10-5',rest:'60 sec',note:'Max change-of-direction speed.'},
+      ]},
+    ]},
+    {id:'ppl5',num:5,name:'Legs + Endurance Engine',char:'batman_beyond',theme:'Conditioning',warmup:true,blocks:[
+      {name:'Sprint Block',type:'conditioning',ex:[
+        {id:'sprint-200m',sets:6,reps:'200m',rest:'90 sec',note:'Option: 8×15-sec hill sprints, 60–90 sec rest.'},
+      ]},
+      {name:'Leg Endurance',type:'accessory',ex:[
+        {id:'front-squat',sets:4,reps:'8',rest:'2 min',note:'Elbows high. Higher reps — build the engine in the legs.'},
+        {id:'db-rdl',sets:3,reps:'12',rest:'90 sec',note:'Controlled hinge. Feel the hamstrings.'},
+        {id:'reverse-lunge',sets:3,reps:'12 each',rest:'75 sec',note:'Each leg. Weight in the front heel.'},
+      ]},
+      {name:'Conditioning Circuit',type:'conditioning',ex:[
+        {id:'burpee',sets:'4–5',reps:'12',rest:'90 sec between rounds',note:'4–5 rounds of this full circuit. No half reps.'},
+        {id:'kb-swing',sets:null,reps:'20',rest:null,note:'Part of circuit.'},
+        {id:'mountain-climber',sets:null,reps:'30 each side',rest:null,note:'Part of circuit.'},
+        {id:'air-squat',sets:null,reps:'25',rest:null,note:'Part of circuit.'},
+        {id:'jump-rope',sets:null,reps:'1 min',rest:null,note:'Part of circuit.'},
+      ]},
+      {name:'Finish',type:'mobility',ex:[
+        {id:'hip-opener',sets:1,reps:'10–15 min',rest:null,note:'Full mobility flow. Earn it.'},
+      ]},
+    ]},
+  ],
+};
+
+const PROGRAMS={'5day':P5,'6day':P6,'ppl':PPL};
 
 const PROGRESSION=[
   {wk:1,phase:'Establish',color:'#4d8eff',tip:'Set your working weight. Leave 1–2 reps in the tank. This is baseline.'},
